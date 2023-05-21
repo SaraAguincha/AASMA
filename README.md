@@ -38,6 +38,6 @@ random_agent.py [-h] [--env ENV] [--episodes EPISODES]
 
 options:
   -h, --help           show this help message and exit
-  --env ENV            Name of the environment (default: Checkers-v0)
+  --env ENV            Name of the environment (default: Checkers-v0) ((Nosso é: TrafficJunction10-v0)
   --episodes EPISODES  episodes (default: 1)
 ```
