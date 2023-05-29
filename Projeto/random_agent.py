@@ -12,8 +12,10 @@ if __name__ == '__main__':
                         help='episodes (default: %(default)s)')
     args = parser.parse_args()
 
-    env = gym.make(args.env)
-    env = Monitor(env, directory='recordings/' + args.env, force=True)
+    #env = gym.make(args.env)
+    env = gym.make("TrafficJunction10-v0")
+    
+    env = Monitor(env, directory='recordings/' + "TrafficJunction10-v0", force=True)
     for ep_i in range(args.episodes):
         done_n = [False for _ in range(env.n_agents)]
         ep_reward = 0
