@@ -1,5 +1,4 @@
 import argparse
-
 import numpy as np
 from gym import Env
 
@@ -50,9 +49,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     # 1 - Setup environment
-    environment = TrafficJunction(
-        grid_shape=(14, 14), step_cost=-0.01, n_max=1, collision_reward=-10, arrive_prob=0.5
-    )
+    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=1, collision_reward=-10, arrive_prob=0.5)
     environment = SingleAgentWrapper(environment, agent_id=0)
 
     # 2 - Setup agent
