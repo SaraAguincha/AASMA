@@ -9,9 +9,9 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from ..utils.action_space import MultiAgentActionSpace
-from ..utils.draw import draw_grid, fill_cell, write_cell_text
-from ..utils.observation_space import MultiAgentObservationSpace
+from ..utils_traffic_junction.action_space import MultiAgentActionSpace
+from ..utils_traffic_junction.draw import draw_grid, fill_cell, write_cell_text
+from ..utils_traffic_junction.observation_space import MultiAgentObservationSpace
 
 logger = logging.getLogger(__name__)
 
@@ -308,7 +308,7 @@ class TrafficJunction(gym.Env):
         self._step_count += 1  # global environment step
         rewards = [0 for _ in range(self.n_agents)]  # initialize rewards array
         step_collisions = 0  # counts collisions in this step
-        print("here")
+
         # checks if there is a collision; this is done in the __update_agent_pos method
         # we still need to check both agent_dones and on_the_road because an agent may not be done
         # and have not entered the road yet 
