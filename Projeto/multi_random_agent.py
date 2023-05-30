@@ -46,19 +46,8 @@ if __name__ == '__main__':
     environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=8, collision_reward=-10, arrive_prob=0.5)
 
     # 2 - Setup the teams
-    teams = {
-
-        "Random Team": [
-            RandomAgent(environment.action_space[0].n),
-            RandomAgent(environment.action_space[1].n),
-            RandomAgent(environment.action_space[2].n),
-            RandomAgent(environment.action_space[3].n),
-            RandomAgent(environment.action_space[4].n),
-            RandomAgent(environment.action_space[5].n),
-            RandomAgent(environment.action_space[6].n),
-            RandomAgent(environment.action_space[7].n),
-        ]
-    }
+    teams = {}
+    teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
 
     # 3 - Evaluate teams
     results = {}
