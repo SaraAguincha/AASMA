@@ -25,10 +25,13 @@ class ConventionAgent(Agent):
         # middle cell of a 5x5 grid, and position on the list of coordinates
         agent_position = self.observation[2][2][4:6]
         
+        agent_route = self.observation[2][2][6:]
+        
         # get all the positions nearby agents that it can observe, except himself
         near_agents = self.get_near_agents(self.observation, self.n_agents, agent_position)      
 
         # action = self.get_action(agent_position, near_agents)
+        
         return GAS
         
 
@@ -48,11 +51,10 @@ class ConventionAgent(Agent):
             n_agents (int): it represents how many agents are in the simulation
 
         Returns:
-            list: List of array, each array has a nearby agent position
+            list: List of arrays, each array has a nearby agent position
         """
         near_agents = []
         
-        print(self.observation)
         # Goes through the whole observation row by row, checking each cell for nearby agents
         for row in self.observation:
             for cell in row:
