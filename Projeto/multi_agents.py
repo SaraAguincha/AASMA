@@ -49,13 +49,13 @@ if __name__ == '__main__':
 
     # 2 - Setup the teams
     teams = {}
-    teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
-    teams["Greedy Team"] = [
-           GreedyAgent(agent_id=0, n_agents=4),
-           GreedyAgent(agent_id=1, n_agents=4),
-           GreedyAgent(agent_id=2, n_agents=4),
-           GreedyAgent(agent_id=3, n_agents=4)
-       ]
+    # teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
+    # teams["Greedy Team"] = [
+    #        GreedyAgent(agent_id=0, n_agents=4),
+    #        GreedyAgent(agent_id=1, n_agents=4),
+    #        GreedyAgent(agent_id=2, n_agents=4),
+    #        GreedyAgent(agent_id=3, n_agents=4)
+    #    ]
     
     teams["Convention Team"] = [
             ConventionAgent(agent_id=0, n_agents=4),

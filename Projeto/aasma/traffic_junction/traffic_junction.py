@@ -74,7 +74,7 @@ class TrafficJunction(gym.Env):
         self.curr_cars_count = 0
         self._n_routes = 3
 
-        self._agent_view_mask = (3, 3)
+        self._agent_view_mask = (5, 5)
 
         # entry gates where the cars spawn
         # Note: [(7, 0), (13, 7), (6, 13), (0, 6)] for (14 x 14) grid
@@ -230,7 +230,7 @@ class TrafficJunction(gym.Env):
             _agent_i_obs[agent_i] = 1
 
             # location
-            _agent_i_obs += [pos[0] / (self._grid_shape[0] - 1), pos[1] / (self._grid_shape[1] - 1)]  # coordinates
+            _agent_i_obs += [pos[0] , pos[1] ]  # coordinates
 
             # route 
             route_agent_i = np.zeros(self._n_routes)
@@ -243,13 +243,14 @@ class TrafficJunction(gym.Env):
         agent_obs = []
         for agent_i in range(self.n_agents):
             pos = self.agent_pos[agent_i]
-            mask_view = np.zeros((*self._agent_view_mask, len(agent_no_mask_obs[0])), dtype=np.float32)
-            for row in range(max(0, pos[0] - 1), min(pos[0] + 1 + 1, self._grid_shape[0])):
-                for col in range(max(0, pos[1] - 1), min(pos[1] + 1 + 1, self._grid_shape[1])):
+            mask_view = np.zeros((*self._agent_view_mask, len(agent_no_mask_obs[0])), dtype=np.int)
+            for row in range(max(0, pos[0] - 2), min(pos[0] + 1 + 2, self._grid_shape[0])):
+                for col in range(max(0, pos[1] - 2), min(pos[1] + 1 + 2, self._grid_shape[1])):
                     if PRE_IDS['agent'] in self._full_obs[row][col]:
                         _id = int(self._full_obs[row][col].split(PRE_IDS['agent'])[1]) - 1
-                        mask_view[row - (pos[0] - 1), col - (pos[1] - 1), :] = agent_no_mask_obs[_id]
-            agent_obs.append(mask_view.flatten())
+                        mask_view[row - (pos[0] - 2), col - (pos[1] - 2), :] = agent_no_mask_obs[_id]
+                        
+            agent_obs.append(mask_view)
 
         if self.full_observable:
             _obs = np.array(agent_obs).flatten().tolist()
@@ -353,7 +354,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        time.sleep(0.1)
+        time.sleep(1)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):
@@ -425,6 +426,7 @@ class TrafficJunction(gym.Env):
             self.agent_pos[agent_i] = next_pos
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
             self.__update_agent_view(agent_i)
+            
 
         return False
 

@@ -1,3 +1,4 @@
+import numpy as np
 from aasma import Agent
 
 N_ACTIONS = 2
@@ -20,53 +21,45 @@ class ConventionAgent(Agent):
         
 
     def action(self) -> int:        
-        agent_position = self.observation[4 * (self.n_agents + 5) + 1:4 * (self.n_agents + 5) + 3]  # middle cell from the 3x3 grid
         
-        # not sure if necessary but it works, and its simpler to 'see' the position
-        # 13 is: grid_size - 1
-        agent_position = [round(i * 13) for i in agent_position]
+        # middle cell of a 5x5 grid, and position on the list of coordinates
+        agent_position = self.observation[2][2][4:6]
+        
+        # get all the positions nearby agents that it can observe, except himself
+        near_agents = self.get_near_agents(self.observation, self.n_agents, agent_position)      
 
-        near_agents = self.get_near_agents(self.observation, self.n_agents)      
-        # yet again not, necessary
-        i = 0
-        for agent in near_agents:
-            near_agents[i] = [round(i * 13) for i in agent]
-            i += 1
-
-        action = self.get_action(agent_position, near_agents)
-        return action
+        # action = self.get_action(agent_position, near_agents)
+        return GAS
         
 
     # ################# #
     # Auxiliary Methods #
     # ################# #
     
-    def get_near_agents(self,observation, n_agents):
+    def get_near_agents(self,observation, n_agents, agent_position):
         """
         TODO - add description for observation
         
         Given the agent observation (currently a grid of 3x3, it returns
-        a list of the positions of the near agents.
+        a array of the positions of the near agents.
 
         Args:
-            observation (list): _description_
+            observation (array): _description_
             n_agents (int): it represents how many agents are in the simulation
 
         Returns:
-            list: List of lists, each sublist has a nearby agent position
+            list: List of array, each array has a nearby agent position
         """
         near_agents = []
         
-        # While that goes through the whole observation. When there is a 1 in the first n_agents + 5 elements
-        # it means that there is an agent there. Also verifies if it's not itself
-        i = 0
-        while i < len(self.observation):
-            if 1 in self.observation[i :i + n_agents + 5] and not(4 * (n_agents + 5) <= i <= 5 * (n_agents + 5)):
-                near_agents.append(list(self.observation[i + n_agents : i + n_agents + 2]))
-                i += n_agents + 5
-                
-            i += n_agents + 5
-           
+        print(self.observation)
+        # Goes through the whole observation row by row, checking each cell for nearby agents
+        for row in self.observation:
+            for cell in row:
+                # checks if its not the agent itself
+                if 1 in cell and not np.array_equiv(cell[4:6], agent_position):
+                    near_agents.append(cell[4:6])
+        
         return near_agents
         
         
@@ -89,7 +82,7 @@ class ConventionAgent(Agent):
         if near_agents:
             for agent in near_agents:
                 
-                if agent[0] >= agent_position[0]:
+                if agent[0] > agent_position[0]:
                     
                     if agent[1] <= agent_position[1]:
                         return BREAK
@@ -98,7 +91,7 @@ class ConventionAgent(Agent):
                 
                 else:
                     if agent[1] >= agent_position[1]:
-                        return BREAK
-                    else:
                         return GAS
+                    else:
+                        return BREAK
         return GAS
