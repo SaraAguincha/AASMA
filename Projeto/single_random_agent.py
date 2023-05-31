@@ -45,7 +45,7 @@ class RandomAgent(Agent):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", type=int, default=30)
+    parser.add_argument("--episodes", type=int, default=10)
     opt = parser.parse_args()
 
     # 1 - Setup environment
