@@ -54,7 +54,7 @@ python3 multi_agents.py [--episodes] [N_EPISODES]
       At the end of the get_agent_obs() function, it returns an array of arrays with all the cells the agent can observe.
 
  - Route an array of 3 elements, the 1 is which the agent is going:
-      - [Forward Right Left], per example, going to the right is: [0 1 0]
+      - [Forward Right Left], per example, going to the right is: [0 1 0] (its the destination)
 
 ```
 
