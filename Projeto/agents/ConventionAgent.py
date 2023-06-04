@@ -21,7 +21,6 @@ class ConventionAgent(Agent):
         self.n_agents = n_agents
         self.n_actions = N_ACTIONS
         
-        # self.__in_junction = False
         
 
     def action(self) -> int:        
@@ -34,19 +33,11 @@ class ConventionAgent(Agent):
         # get all the positions nearby agents that it can observe, except himself
         near_agents = self.get_near_agents(self.observation, self.n_agents, agent_position)   
 
-
-        if self.is_in_junction(agent_position):
-            self.__in_junction = True
-
-        #print(self.junction_position(agent_position))
-
-        #action = self.get_action(agent_position, agent_route, near_agents)
+        # stops at the intersection, gives priority to the right, if a car is in the junction stops
+        # currently top has priority and always advances if no car is in the junction
+        action_v1 = self.get_action_v1(agent_position, near_agents)
         
-        
-        action_stop_junction = self.get_action_junction_related(agent_position, agent_route, near_agents)
-
-        
-        return action_stop_junction
+        return action_v1
         
 
     # ################# #
@@ -73,65 +64,66 @@ class ConventionAgent(Agent):
         for row in self.observation:
             for cell in row:
                 # checks if its not the agent itself
-                if 1 in cell and not np.array_equiv(cell[4:6], agent_position):
-                    near_agents.append([cell[4:6], cell[6:]])
+                if 1 in cell and not np.array_equiv(cell[self.n_agents:self.n_agents + 2], agent_position):
+                    near_agents.append([cell[self.n_agents:self.n_agents + 2], cell[self.n_agents + 2:]])
         
         return near_agents
         
         
         
         
-    def get_action(self, agent_position, route, near_agents):
-        """
-        With the arguments given, returns the action the
-        agent should take based on its observation
+    # def get_action(self, agent_position, route, near_agents):
+    #     """
+    #     With the arguments given, returns the action the
+    #     agent should take based on its observation
         
-        TODO - should it take into account the direction the other car wants to go?
+    #     TODO - should it take into account the direction the other car wants to go?
 
-        Args:
-            agent_position (array): has the coordinates of the agent
-            near_agents (list): list of lists, each has the coordinates of nearby agents
+    #     Args:
+    #         agent_position (array): has the coordinates of the agent
+    #         near_agents (list): list of lists, each has the coordinates of nearby agents
 
-        Returns:
-            int: action that the agent will take
-        """
+    #     Returns:
+    #         int: action that the agent will take
+    #     """
         
-        # currently it is giving priority to the car coming through the north, if all of them arrive at the same time
-        # in the future it should prioritize the one with more traffic
+    #     # currently it is giving priority to the car coming through the north, if all of them arrive at the same time
+    #     # in the future it should prioritize the one with more traffic
         
-        # agent[0] is agent position, agent[1] is agent route
-        
-        
-        # if agent is turning right it has priority
-        if route[1] == 1:
-            return GAS
+    #     # agent[0] is agent position, agent[1] is agent route
         
         
-        agent_x, agent_y = agent_position   # agent current coordinates
-        agent_loc = self.junction_position(agent_position)
+    #     # if agent is turning right it has priority
+    #     if route[1] == 1:
+    #         return GAS
+        
+        
+    #     agent_x, agent_y = agent_position   # agent current coordinates
+    #     agent_loc = self.junction_position(agent_position)
+
 
         
-        if self.pre_junction(agent_position):
-            if near_agents:
-                for agent in near_agents:
-                    if agent_loc == "HORIZONTAL":
-                # means we are before junction coming from the right and there is a car on our right
-                        if agent_x > agent[0][0]:
-                            if agent_y < agent[0][1]:
-                                return BREAK
-                            #elif agent_x + 1 == agent[0][0]:
-                            #    continue
+    #     if self.pre_junction(agent_position):
+    #         if near_agents:
+    #             for agent in near_agents:
+    #                 if agent_loc == "HORIZONTAL":
+    #             # means we are before junction coming from the right and there is a car on our right
+    #                     if agent_x > agent[0][0]:
+    #                         if agent_y < agent[0][1]:
+    #                             return BREAK
+    #                         #elif agent_x + 1 == agent[0][0]:
+    #                         #    continue
                         
-                        else:
-                            if agent_y < agent[0][1]:
-                                return BREAK
+    #                     else:
+    #                         if agent_y < agent[0][1]:
+    #                             return BREAK
                             
                 
-                # since communication is still not working, for now the north will not give rights
-                    else:
-                        if agent_x < agent[0][0] and agent_y < agent[0][1]:
-                            return BREAK
-        return GAS
+    #             # since communication is still not working, for now the north will not give rights
+    #                 else:
+    #                     if agent_x < agent[0][0] and agent_y < agent[0][1]:
+    #                         return BREAK
+    #     return GAS
     
     
     # hardcoded see if its in the junction
@@ -145,6 +137,10 @@ class ConventionAgent(Agent):
             return True
         return False
     
+    
+    
+    
+    
     # hardcoded positions to define where they are in junction (not called in junction)
     def junction_position(self, agent_position):
         
@@ -155,26 +151,32 @@ class ConventionAgent(Agent):
     
     
     def pre_junction(self, agent_position):
+        if np.array_equiv(TOP, agent_position):
+            return TOP
         
-        if np.array_equiv(TOP, agent_position) \
-            or np.array_equiv(RIGHT, agent_position) \
-            or np.array_equiv(DOWN, agent_position) \
-            or np.array_equiv(LEFT, agent_position):
-            
-            return True
-        return False
+        elif np.array_equiv(RIGHT, agent_position):
+            return RIGHT
+        
+        elif np.array_equiv(DOWN, agent_position):
+            return DOWN
+        
+        elif np.array_equiv(LEFT, agent_position):
+            return LEFT
+        return []
     
     
     
     
     
     
-    ## TODO, future test in agents. Stops if one agent is in the junction
-    def get_action_junction_related(self, agent_position, route, near_agents):
+    ## TODO. Stops if one agent is in the junction, uses right of way
+    # TODO, improve, TOP has always priority
+    def get_action_v1(self, agent_position, near_agents):
         """
-        With the arguments given, stops if someone in junction
-        
-        TODO - should it take into account the direction the other car wants to go?
+        With the arguments given, returns the action it should take. 
+            - Stops if other car is in junction
+            - Uses right of way rule
+            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
 
         Args:
             agent_position (array): has the coordinates of the agent
@@ -184,47 +186,31 @@ class ConventionAgent(Agent):
             int: action that the agent will take
         """
         
-        # currently it is giving priority to the car coming through the north, if all of them arrive at the same time
-        # in the future it should prioritize the one with more traffic
-        
         # agent[0] is agent position, agent[1] is agent route
-        
-        
-        # if agent is turning right it has priority
-        
-        
-        
-        agent_x, agent_y = agent_position   # agent current coordinates
-        agent_loc = self.junction_position(agent_position)
+                
+        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position        
+        agent_pos = self.pre_junction(agent_position)
 
-        
-        if self.pre_junction(agent_position):
+        if agent_pos:
             if near_agents:
                 for agent in near_agents:
                     
-                    if self.is_in_junction(agent):
+                    # in case there is an agent in the junction
+                    if self.is_in_junction(agent[0]):
                         return BREAK
                     
-                    if self.pre_junction(agent):
-                        continue
-                    
-                    if agent_loc == "HORIZONTAL":
-                # means we are before junction coming from the right and there is a car on our right
-                        if agent_x > agent[0][0]:
-                            if agent_y < agent[0][1]:
-                                return BREAK
-                            #elif agent_x + 1 == agent[0][0]:
-                            #    continue
+                    # in case the agent is in one of the 4 positions
+                    near_agent_pos = self.pre_junction(agent[0])
+                    if near_agent_pos:
                         
-                        else:
-                            if agent_y < agent[0][1]:
-                                return BREAK
-                            
-                
-                # since communication is still not working, for now the north will not give rights
-                    else:
-                        if agent_x < agent[0][0] and agent_y < agent[0][1]:
+                        # TODO improve this dumb verifications
+                        if agent_pos == RIGHT and near_agent_pos == TOP:
                             return BREAK
                         
+                        elif agent_pos == DOWN and near_agent_pos == RIGHT:
+                            return BREAK
+                        
+                        elif agent_pos == LEFT and near_agent_pos == DOWN:
+                            return BREAK
                 
         return GAS

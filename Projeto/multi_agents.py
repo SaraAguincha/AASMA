@@ -45,23 +45,35 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     # 1 - Setup the environment
-    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=4, collision_reward=-10, arrive_prob=0.5)
+    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=10, collision_reward=-10, arrive_prob=0.5)
 
     # 2 - Setup the teams
     teams = {}
     # teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
     # teams["Greedy Team"] = [
-    #        GreedyAgent(agent_id=0, n_agents=4),
-    #        GreedyAgent(agent_id=1, n_agents=4),
-    #        GreedyAgent(agent_id=2, n_agents=4),
-    #        GreedyAgent(agent_id=3, n_agents=4)
+    #        GreedyAgent(agent_id=0, n_agents=10),
+    #        GreedyAgent(agent_id=1, n_agents=10),
+    #        GreedyAgent(agent_id=2, n_agents=10),
+    #        GreedyAgent(agent_id=3, n_agents=10),
+    #        GreedyAgent(agent_id=4, n_agents=10),
+    #        GreedyAgent(agent_id=5, n_agents=10),
+    #        GreedyAgent(agent_id=6, n_agents=10),
+    #        GreedyAgent(agent_id=7, n_agents=10),
+    #        GreedyAgent(agent_id=8, n_agents=10),
+    #        GreedyAgent(agent_id=9, n_agents=10)
     #    ]
     
     teams["Convention Team"] = [
-            ConventionAgent(agent_id=0, n_agents=4),
-            ConventionAgent(agent_id=1, n_agents=4),
-            ConventionAgent(agent_id=2, n_agents=4),
-            ConventionAgent(agent_id=3, n_agents=4)
+            ConventionAgent(agent_id=0, n_agents=10),
+            ConventionAgent(agent_id=1, n_agents=10),
+            ConventionAgent(agent_id=2, n_agents=10),
+            ConventionAgent(agent_id=3, n_agents=10),
+            ConventionAgent(agent_id=4, n_agents=10),
+            ConventionAgent(agent_id=5, n_agents=10),
+            ConventionAgent(agent_id=6, n_agents=10),
+            ConventionAgent(agent_id=7, n_agents=10),
+            ConventionAgent(agent_id=8, n_agents=10),
+            ConventionAgent(agent_id=9, n_agents=10)
         ]
 
     # 3 - Evaluate teams
