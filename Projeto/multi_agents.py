@@ -45,11 +45,17 @@ if __name__ == '__main__':
     parser.add_argument("--episodes", type=int, default=20)
     parser.add_argument("--agents", type=int, default=10)
     parser.add_argument("--render", action='store_true')
-    parser.add_argument("--random", action='store_false')
-    parser.add_argument("--greedy", action='store_false')
-    parser.add_argument("--conventional", action='store_false')
+    parser.add_argument("--random", "-r", action='store_true')
+    parser.add_argument("--greedy", "-g", action='store_true')
+    parser.add_argument("--conventional", "-c", action='store_true')
+    parser.add_argument("--all", "-a", action='store_true')
 
     opt = parser.parse_args()
+
+    if (opt.all):
+        opt.random = True
+        opt.greedy = True
+        opt.conventional = True
 
     # 1 - Setup the environment
     environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5)
