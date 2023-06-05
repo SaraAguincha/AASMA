@@ -12,7 +12,7 @@ from agents.GreedyAgent import GreedyAgent
 from agents.ConventionAgent import ConventionAgent
 
 
-def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int) -> np.ndarray:
+def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool) -> np.ndarray:
 
     results = np.zeros(n_episodes)
 
@@ -28,7 +28,8 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int) 
                 agent.see(observations)
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
-            environment.render()
+            if render:
+                environment.render()
             observations = next_observations
         results[episode] = steps
 
@@ -42,50 +43,38 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--episodes", type=int, default=20)
+    parser.add_argument("--agents", type=int, default=10)
+    parser.add_argument("--render", action='store_true')
+    parser.add_argument("--random", action='store_false')
+    parser.add_argument("--greedy", action='store_false')
+    parser.add_argument("--conventional", action='store_false')
+
     opt = parser.parse_args()
 
     # 1 - Setup the environment
-    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=10, collision_reward=-10, arrive_prob=0.5)
+    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5)
 
     # 2 - Setup the teams
     teams = {}
-    # teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
-    # teams["Greedy Team"] = [
-    #        GreedyAgent(agent_id=0, n_agents=10),
-    #        GreedyAgent(agent_id=1, n_agents=10),
-    #        GreedyAgent(agent_id=2, n_agents=10),
-    #        GreedyAgent(agent_id=3, n_agents=10),
-    #        GreedyAgent(agent_id=4, n_agents=10),
-    #        GreedyAgent(agent_id=5, n_agents=10),
-    #        GreedyAgent(agent_id=6, n_agents=10),
-    #        GreedyAgent(agent_id=7, n_agents=10),
-    #        GreedyAgent(agent_id=8, n_agents=10),
-    #        GreedyAgent(agent_id=9, n_agents=10)
-    #    ]
-    
-    teams["Convention Team"] = [
-            ConventionAgent(agent_id=0, n_agents=10),
-            ConventionAgent(agent_id=1, n_agents=10),
-            ConventionAgent(agent_id=2, n_agents=10),
-            ConventionAgent(agent_id=3, n_agents=10),
-            ConventionAgent(agent_id=4, n_agents=10),
-            ConventionAgent(agent_id=5, n_agents=10),
-            ConventionAgent(agent_id=6, n_agents=10),
-            ConventionAgent(agent_id=7, n_agents=10),
-            ConventionAgent(agent_id=8, n_agents=10),
-            ConventionAgent(agent_id=9, n_agents=10)
-        ]
+    if opt.random:
+        teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
+    if opt.greedy: teams["Greedy Team"] = []
+    if opt.conventional: teams["Convention Team"] = []
+
+    for i in range(opt.agents):
+        if opt.greedy: teams["Greedy Team"].append(GreedyAgent(agent_id=i, n_agents=opt.agents))
+        if opt.conventional: teams["Convention Team"].append(ConventionAgent(agent_id=i, n_agents=opt.agents))
 
     # 3 - Evaluate teams
     results = {}
     for team, agents in teams.items():
-        result = run_multi_agent(environment, agents, opt.episodes)
+        result = run_multi_agent(environment, agents, opt.episodes, opt.render)
         results[team] = result
 
     # 4 - Compare results
     compare_results(
         results,
-        title="Random Team on 'Traffic Junction' Environment",
+        title="Results on 'Traffic Junction' Environment",
         colors=["orange", "blue", "green"]
     )
 

@@ -57,7 +57,7 @@ class TrafficJunction(gym.Env):
 
     def __init__(self, grid_shape=(14, 14), step_cost=-0.01, n_max=4, collision_reward=-10, arrive_prob=0.5,
                  full_observable: bool = False, max_steps: int = 100):
-        assert 1 <= n_max <= 10, "n_max should be range in [1,10]"
+        assert 1 <= n_max <= 255, "n_max should be range in [1,10]"
         assert 0 <= arrive_prob <= 1, "arrive probability should be in range [0,1]"
         assert len(grid_shape) == 2, 'only 2-d grids are acceptable'
         assert 1 <= max_steps, "max_steps should be more than 1"
@@ -354,7 +354,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        time.sleep(1)
+        time.sleep(0)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):
@@ -455,7 +455,7 @@ class TrafficJunction(gym.Env):
 
         for agent_i in range(self.n_agents):
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
-                fill_cell(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENTS_COLORS[agent_i])
+                fill_cell(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENTS_COLORS[agent_i % 10])
                 write_cell_text(img, text=str(agent_i + 1), pos=self.agent_pos[agent_i], cell_size=CELL_SIZE,
                                 fill='white', margin=0.3)
 
