@@ -17,7 +17,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
     results = np.zeros(n_episodes)
 
     for episode in range(n_episodes):
-
+        collisions = 0
         steps = 0
         terminals = [False for _ in range(len(agents))]
         observations = environment.reset()
@@ -28,11 +28,14 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
                 agent.see(observations)
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
+            collisions += info['step_collisions']
+            print(f"Collisions: {collisions}\n")
             if render:
                 environment.render()
             observations = next_observations
         results[episode] = steps
 
+        print(f"Total collisions: {collisions}")
         environment.close()
 
     return results
@@ -44,6 +47,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--episodes", type=int, default=20)
     parser.add_argument("--agents", type=int, default=10)
+    parser.add_argument("--maxsteps", type=int, default=100)
     parser.add_argument("--render", action='store_true')
     parser.add_argument("--random", "-r", action='store_true')
     parser.add_argument("--greedy", "-g", action='store_true')
@@ -58,7 +62,7 @@ if __name__ == '__main__':
         opt.conventional = True
 
     # 1 - Setup the environment
-    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5)
+    environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5, max_steps=opt.maxsteps)
 
     # 2 - Setup the teams
     teams = {}
@@ -67,7 +71,7 @@ if __name__ == '__main__':
     if opt.greedy: teams["Greedy Team"] = []
     if opt.conventional: teams["Convention Team"] = []
 
-    for i in range(opt.agents):
+    for i in range(1, opt.agents + 1):
         if opt.greedy: teams["Greedy Team"].append(GreedyAgent(agent_id=i, n_agents=opt.agents))
         if opt.conventional: teams["Convention Team"].append(ConventionAgent(agent_id=i, n_agents=opt.agents))
 

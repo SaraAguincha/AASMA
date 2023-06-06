@@ -6,23 +6,23 @@ N_ACTIONS = 2
 GAS, BREAK = range(N_ACTIONS)
 
 
-# TOP, RIGHT, DOWN, LEFT = [6, 8], [8, 7], [7, 5], [5, 6]
-
 class Ways(Enum):
-    TOP = [6, 8]
-    DOWN = [7, 5]
-    LEFT = [5, 6]
-    RIGHT = [8, 7]
+    TOP = [5, 6]
+    LEFT = [7, 5]
+    DOWN = [8, 7]
+    RIGHT = [6, 8]
     # Ordered counter-clockwise directions
     DIRECTION = [TOP, LEFT, DOWN, RIGHT]
 
+
 class Junction_Pos(Enum):
-    TOP_LEFT = [6, 7]
-    BOTTOM_LEFT = [6, 6]
-    BOTTOM_RIGHT = [7, 6]
-    TOP_RIGHT = [7, 7]
+    TOP_LEFT = [6, 6]
+    BOTTOM_LEFT = [7, 6]
+    BOTTOM_RIGHT = [7, 7]
+    TOP_RIGHT = [6, 7]
     # Ordered counter-clockwise directions
     DIRECTION = [TOP_LEFT, BOTTOM_LEFT, BOTTOM_RIGHT, TOP_RIGHT]
+
 
 class ConventionAgent(Agent):
     """
@@ -51,11 +51,13 @@ class ConventionAgent(Agent):
         # currently top has priority and always advances if no car is in the junction
         # action_v1 = self.get_action_v1(agent_position, near_agents)
 
-        #action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
+        # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
-        action_v3 = self.get_action_v3(agent_position, agent_route, near_agents)
+        # action_v3 = self.get_action_v3(agent_position, agent_route, near_agents)
 
-        return action_v3
+        action_v4 = self.get_action_v4(agent_position, agent_route, near_agents)
+
+        return action_v4
 
     # ################# #
     # Auxiliary Methods #
@@ -118,6 +120,36 @@ class ConventionAgent(Agent):
             return Ways.LEFT.value
         return []
 
+    def get_moving_direction(self, agent_position):
+        #print(f"Agent {self.agent_id} position: {agent_position}")
+        if agent_position[1] == 6:
+            #print(f"Downwards {self.agent_id}")
+            return "Downwards"
+        elif agent_position[1] == 7:
+            #print(f"Upwards {self.agent_id}")
+            return "Upwards"
+        elif agent_position[0] == 7:
+            #print(f"Rightwards {self.agent_id}")
+            return "Rightwards"
+        elif agent_position[0] == 6:
+            #print(f"Leftwards {self.agent_id}")
+            return "Leftwards"
+        else:
+            return None
+
+    def get_next_position(self, moving_direction: str, agent_position):
+        if list(agent_position) in Junction_Pos.DIRECTION.value:
+            return []
+        elif moving_direction == "Downwards":
+            return agent_position[0] + 1, agent_position[1]
+        elif moving_direction == "Upwards":
+            return agent_position[0] - 1, agent_position[1]
+        elif moving_direction == "Rightwards":
+            return agent_position[0], agent_position[1] + 1
+        elif moving_direction == "Leftwards":
+            return agent_position[0], agent_position[1] - 1
+        return []
+
     ## TODO. Stops if one agent is in the junction, uses right of way
     # TODO, improve, TOP has always priority
     def get_action_v1(self, agent_position, near_agents):
@@ -155,17 +187,6 @@ class ConventionAgent(Agent):
                         # Checks if near agent is in the right
                         if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 3]:
                             return BREAK
-
-                        # TODO improve this dumb verifications
-                        # if agent_pos == RIGHT and near_agent_pos == TOP:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == DOWN and near_agent_pos == RIGHT:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == LEFT and near_agent_pos == DOWN:
-                        #     return BREAK
-
         return GAS
 
     def get_action_v2(self, agent_position, agent_route, near_agents):
@@ -203,17 +224,6 @@ class ConventionAgent(Agent):
                         # Checks if near agent is in the right
                         if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 3]:
                             return BREAK
-
-                        # # TODO improve this dumb verifications
-                        # if agent_pos == Ways.RIGHT.value and near_agent_pos == Ways.TOP.value:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == Ways.DOWN.value and near_agent_pos == Ways.RIGHT.value:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == Ways.LEFT.value and near_agent_pos == Ways.DOWN.value:
-                        #     return BREAK
-
         return GAS
 
     def get_action_v3(self, agent_position, agent_route, near_agents):
@@ -242,8 +252,8 @@ class ConventionAgent(Agent):
                 for agent in near_agents:
                     index = Ways.DIRECTION.value.index(agent_pos)
                     # in case there is an agent in the junction and is not turning right
-                    if self.is_in_junction(agent[0])\
-                            and not (agent[1][1] == 1)\
+                    if self.is_in_junction(agent[0]) \
+                            and not (agent[1][1] == 1) \
                             and not (np.array_equiv(agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 3])):
                         return BREAK
 
@@ -257,15 +267,54 @@ class ConventionAgent(Agent):
                         # Checks if near agent is in the right
                         if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 3]:
                             return BREAK
-
-                        # # TODO improve this dumb verifications
-                        # if agent_pos == Ways.RIGHT.value and near_agent_pos == Ways.TOP.value:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == Ways.DOWN.value and near_agent_pos == Ways.RIGHT.value:
-                        #     return BREAK
-                        #
-                        # elif agent_pos == Ways.LEFT.value and near_agent_pos == Ways.DOWN.value:
-                        #     return BREAK
-
         return GAS
+
+    def get_action_v4(self, agent_position, agent_route, near_agents):
+        """
+        With the arguments given, returns the action it should take.
+            - Stops if other car is in junction
+            - Uses right of way rule
+            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
+
+        Args:
+            agent_position (array): has the coordinates of the agent
+            near_agents (list): list of lists, each has the coordinates of nearby agents
+
+        Returns:
+            int: action that the agent will take
+        """
+
+        # agent[0] is agent position, agent[1] is agent route
+
+        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position
+        agent_junction_pos = self.pre_junction(agent_position)
+        agent_next_position = self.get_next_position(self.get_moving_direction(agent_position), agent_position)
+
+        # if agent will turn right has priority and will advance
+        if agent_junction_pos and not (agent_route[1] == 1):
+            if near_agents:
+                for near_agent in near_agents:
+
+                    index = Ways.DIRECTION.value.index(agent_junction_pos)
+                    # in case there is an agent in the junction and is not turning right
+                    if self.is_in_junction(near_agent[0]) \
+                            and not (near_agent[1][1] == 1) \
+                            and not (np.array_equiv(near_agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 3])):
+                        return BREAK
+
+                    # if self.is_in_junction(agent[0]) and not (agent[1][1] == 1):
+                    #     if np.array_equiv(agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 3]):
+                    #         print("HERE!")
+
+                    # in case the agent is in one of the 4 positions
+                    near_agent_pos = self.pre_junction(near_agent[0])
+                    if near_agent_pos:
+                        # Checks if near agent is in the right
+                        if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 3]:
+                            return BREAK
+        if near_agents:
+            for near_agent in near_agents:
+                if np.array_equiv(near_agent[0], agent_next_position):
+                    return BREAK
+        return GAS
+
