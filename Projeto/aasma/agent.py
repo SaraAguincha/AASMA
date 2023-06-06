@@ -38,9 +38,13 @@ class Agent(ABC):
     def __init__(self, name: str):
         self.name = name
         self.observation = None
+        self.visited_positions = []
 
     def see(self, observation: np.ndarray):
         self.observation = observation
+
+    def reset_visited(self):
+        self.visited_positions = []
 
     @abstractmethod
     def action(self) -> int:
