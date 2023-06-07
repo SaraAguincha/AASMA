@@ -42,6 +42,7 @@ class ConventionAgent(Agent):
         self.agent_id = agent_id
         self.n_agents = n_agents
         self.n_actions = N_ACTIONS
+        self.visited_positions = []
         self.moving_direction = ""
         self.pre_junction_pos = []
 
@@ -54,18 +55,18 @@ class ConventionAgent(Agent):
         agent_route = self.observation[2][2][self.n_agents + 2:]
 
         # get all the positions nearby agents that it can observe, except himself
-        near_agents = self.get_near_agents(self.observation, self.n_agents, agent_position)
+        near_agents = self.get_near_agents(agent_position)
 
         # stops at the intersection, gives priority to the right, if a car is in the junction stops
         # currently top has priority and always advances if no car is in the junction
 
         self.update_moving_direction(agent_position, agent_route)
 
-        action_v1 = self.get_action_v1(agent_position, near_agents)
+        action = self.get_action(agent_position, near_agents)
 
         #action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
-        return action_v1
+        return action
 
     # ################# #
     # Auxiliary Methods #
@@ -165,7 +166,7 @@ class ConventionAgent(Agent):
             return agent_position[0], agent_position[1] - 1
         return []
 
-    def get_action_v1(self, agent_position, near_agents):
+    def get_action(self, agent_position, near_agents):
         """
         With the arguments given, returns the action it should take.
             - Stops if other car is in junction
