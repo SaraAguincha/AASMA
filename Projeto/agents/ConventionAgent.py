@@ -56,15 +56,12 @@ class ConventionAgent(Agent):
 
         # stops at the intersection, gives priority to the right, if a car is in the junction stops
         # currently top has priority and always advances if no car is in the junction
-        # action_v1 = self.get_action_v1(agent_position, near_agents)
 
-        # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
+        action_v1 = self.get_action_v1(agent_position, agent_route, near_agents)
 
-        # action_v3 = self.get_action_v3(agent_position, agent_route, near_agents)
+        action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
-        action_v4 = self.get_action_v4(agent_position, agent_route, near_agents)
-
-        return action_v4
+        return action_v2
 
     # ################# #
     # Auxiliary Methods #
@@ -172,120 +169,7 @@ class ConventionAgent(Agent):
             return agent_position[0], agent_position[1] - 1
         return []
 
-    ## TODO. Stops if one agent is in the junction, uses right of way
-    # TODO, improve, TOP has always priority
-    def get_action_v1(self, agent_position, near_agents):
-        """
-        With the arguments given, returns the action it should take. 
-            - Stops if other car is in junction
-            - Uses right of way rule
-            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
-
-        Args:
-            agent_position (array): has the coordinates of the agent
-            near_agents (list): list of lists, each has the coordinates of nearby agents
-
-        Returns:
-            int: action that the agent will take
-        """
-
-        # agent[0] is agent position, agent[1] is agent route
-
-        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position        
-        agent_pos = self.pre_junction(agent_position)
-
-        if agent_pos:
-            if near_agents:
-                for agent in near_agents:
-
-                    # in case there is an agent in the junction
-                    if self.is_in_junction(agent[0]):
-                        return BREAK
-
-                    # in case the agent is in one of the 4 positions
-                    near_agent_pos = self.pre_junction(agent[0])
-                    if near_agent_pos:
-                        index = Ways.DIRECTION.value.index(agent_pos)
-                        # Checks if near agent is in the right
-                        if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
-                            return BREAK
-        return GAS
-
-    def get_action_v2(self, agent_position, agent_route, near_agents):
-        """
-        With the arguments given, returns the action it should take. 
-            - Stops if other car is in junction
-            - Uses right of way rule
-            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
-
-        Args:
-            agent_position (array): has the coordinates of the agent
-            near_agents (list): list of lists, each has the coordinates of nearby agents
-
-        Returns:
-            int: action that the agent will take
-        """
-
-        # agent[0] is agent position, agent[1] is agent route
-
-        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position        
-        agent_pos = self.pre_junction(agent_position)
-
-        # if agent will turn right has priority and will advance
-        if agent_pos and not (agent_route[1] == 1):
-            if near_agents:
-                for agent in near_agents:
-                    # in case there is an agent in the junction and is not turning right
-                    if self.is_in_junction(agent[0]) and not (agent[1][1] == 1):
-                        return BREAK
-
-                    # in case the agent is in one of the 4 positions
-                    near_agent_pos = self.pre_junction(agent[0])
-                    if near_agent_pos:
-                        index = Ways.DIRECTION.value.index(agent_pos)
-                        # Checks if near agent is in the right
-                        if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
-                            return BREAK
-        return GAS
-
-    def get_action_v3(self, agent_position, agent_route, near_agents):
-        """
-        With the arguments given, returns the action it should take.
-            - Stops if other car is in junction
-            - Uses right of way rule
-            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
-
-        Args:
-            agent_position (array): has the coordinates of the agent
-            near_agents (list): list of lists, each has the coordinates of nearby agents
-
-        Returns:
-            int: action that the agent will take
-        """
-
-        # agent[0] is agent position, agent[1] is agent route
-
-        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position
-        agent_pos = self.pre_junction(agent_position)
-
-        # if agent will turn right has priority and will advance
-        if agent_pos and not (agent_route[1] == 1):
-            if near_agents:
-                for agent in near_agents:
-                    index = Ways.DIRECTION.value.index(agent_pos)
-                    # in case there is an agent in the junction and is not turning right
-                    if self.is_in_junction(agent[0]):
-                        return BREAK
-
-                    # in case the agent is in one of the 4 positions
-                    near_agent_pos = self.pre_junction(agent[0])
-                    if near_agent_pos:
-                        # Checks if near agent is in the right
-                        if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
-                            return BREAK
-        return GAS
-
-    def get_action_v4(self, agent_position, agent_route, near_agents):
+    def get_action_v1(self, agent_position, agent_route, near_agents):
         """
         With the arguments given, returns the action it should take.
             - Stops if other car is in junction
@@ -310,7 +194,7 @@ class ConventionAgent(Agent):
             self.visited_positions += [list(agent_position)]
             return GAS
 
-        # if agent will turn right has priority and will advance
+        # if agent is in a pre junction position
         if agent_pre_junction_pos:
             if near_agents:
                 for near_agent in near_agents:
@@ -318,6 +202,58 @@ class ConventionAgent(Agent):
                     index = Ways.DIRECTION.value.index(agent_pre_junction_pos)
                     # in case there is an agent in the junction and is not turning right
                     if self.is_in_junction(near_agent[0]):
+                        return BREAK
+
+                    # in case the agent is in one of the 4 positions
+                    near_agent_pos = self.pre_junction(near_agent[0])
+                    if near_agent_pos:
+                        # Checks if near agent is in the right
+                        if not (Ways.DIRECTION.value[index] == Ways.TOP.value) and near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
+                            return BREAK
+                        # If top is max priority, left must yield to everyone
+                        if Ways.DIRECTION.value[index] == Ways.LEFT.value:
+                            return BREAK
+        if near_agents:
+            for near_agent in near_agents:
+                if np.array_equiv(near_agent[0], agent_next_position):
+                    #print(f"Agent {self.agent_id} in {agent_position} didn't want to crash with Agent {near_agent[0]} in position")
+                    return BREAK
+        return GAS
+
+    # TODO - solve the enviroment problem of calculating collisions in order of agent index
+    def get_action_v2(self, agent_position, agent_route, near_agents):
+        """
+        With the arguments given, returns the action it should take.
+            - Stops if other car is in junction
+            - Uses right of way rule
+            - TOP has priority (to despute when all 4 are at the junction at the same time), improved when communication exists
+
+        Args:
+            agent_position (array): has the coordinates of the agent
+            near_agents (list): list of lists, each has the coordinates of nearby agents
+
+        Returns:
+            int: action that the agent will take
+        """
+
+        # agent[0] is agent position, agent[1] is agent route
+
+        # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position
+        agent_pre_junction_pos = self.pre_junction(agent_position)
+        agent_next_position = self.get_next_position(self.get_moving_direction(agent_position), agent_position, agent_route)
+
+        if self.is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
+            self.visited_positions += [list(agent_position)]
+            return GAS
+
+        # if agent is in a pre junction position
+        if agent_pre_junction_pos:
+            if near_agents:
+                for near_agent in near_agents:
+
+                    index = Ways.DIRECTION.value.index(agent_pre_junction_pos)
+                    # in case there is an agent in the junction and is not turning right
+                    if self.is_in_junction(near_agent[0]) and not np.array_equiv(near_agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 4]):
                         return BREAK
 
                     # in case the agent is in one of the 4 positions
