@@ -178,8 +178,6 @@ class TrafficJunction(gym.Env):
         :return: boolean stating true or false
         :rtype: bool
         """
-        if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
-            print(f"Collision in position {pos}")
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1)
 
     def __is_gate_free(self):
@@ -356,7 +354,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        time.sleep(0.1)
+        time.sleep(0)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):

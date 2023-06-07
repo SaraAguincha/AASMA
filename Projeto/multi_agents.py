@@ -24,6 +24,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         while not all(terminals):
             steps += 1
+            #print("\n")
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
             actions = [agent.action() for agent in agents]
@@ -59,7 +60,7 @@ if __name__ == '__main__':
 
     opt = parser.parse_args()
 
-    if (opt.all):
+    if opt.all:
         opt.random = True
         opt.greedy = True
         opt.conventional = True
