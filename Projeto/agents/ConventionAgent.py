@@ -326,6 +326,9 @@ class ConventionAgent(Agent):
                         # Checks if near agent is in the right
                         if not (Ways.DIRECTION.value[index] == Ways.TOP.value) and near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
                             return BREAK
+                        # If top is max priority, left must yield to everyone
+                        if Ways.DIRECTION.value[index] == Ways.LEFT.value:
+                            return BREAK
         if near_agents:
             for near_agent in near_agents:
                 if np.array_equiv(near_agent[0], agent_next_position):
