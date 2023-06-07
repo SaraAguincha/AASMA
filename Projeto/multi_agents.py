@@ -29,7 +29,6 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
             collisions += info['step_collisions']
-            print("\n")
             if render:
                 environment.render()
             observations = next_observations

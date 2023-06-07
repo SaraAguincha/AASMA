@@ -128,54 +128,39 @@ class ConventionAgent(Agent):
         return []
 
     def get_moving_direction(self, agent_position):
-        #print(f"Agent {self.agent_id} position: {agent_position}")
-        if agent_position[1] == 6:
-            print(f"Downwards {self.agent_id}, Visited {self.visited_positions}")
+        if list(agent_position) in Junction_Pos.DIRECTION.value:
+            return ""
+        elif agent_position[1] == 6:
             return Movement.DOWNWARDS.value
         elif agent_position[1] == 7:
-            print(f"Upwards {self.agent_id}, Visited {self.visited_positions}")
             return Movement.UPWARDS.value
         elif agent_position[0] == 7:
-            print(f"Rightwards {self.agent_id}, Visited {self.visited_positions}")
             return Movement.RIGHTWARDS.value
         elif agent_position[0] == 6:
-            print(f"Leftwards {self.agent_id}, Visited {self.visited_positions}")
             return Movement.LEFTWARDS.value
-        else:
-            return []
 
     def get_next_position(self, moving_direction: str, agent_position, agent_route):
-
-        if agent_route[0] == 1:
-            print(f"Agent {self.agent_id} going Forward")
-        # Right
-        elif agent_route[1] == 1:
-            print(f"Agent {self.agent_id} going Right")
-        # Left
-        elif agent_route[2] == 1:
-            print(f"Agent {self.agent_id} going Left")
-
-        if list(agent_position) in Junction_Pos.DIRECTION.value:
-            # Forward
-            if agent_route[0] == 1:
-                # Turns 0 in counter-clockwise direction (stays the same direction)
-                index = Junction_Pos.DIRECTION.value.index(list(agent_position))
-                moving_direction = Movement.DIRECTION.value[index]
-            # Right
-            elif agent_route[1] == 1:
-                # Turns 1 in counter-clockwise direction (turns right)
-                index = Junction_Pos.DIRECTION.value.index(list(agent_position))
-                moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
-            # Left
-            elif agent_route[2] == 1:
-                if self.visited_positions == 2:
-                    # Turns 3 in counter-clockwise direction (turns left)
-                    index = Junction_Pos.DIRECTION.value.index(list(agent_position))
-                    moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
-                else:
-                    # Turns 0 in counter-clockwise direction (stays the same direction)
-                    index = Junction_Pos.DIRECTION.value.index(list(agent_position))
-                    moving_direction = Movement.DIRECTION.value[index]
+        # if list(agent_position) in Junction_Pos.DIRECTION.value:
+        #     # Forward
+        #     if agent_route[0] == 1:
+        #         # Turns 0 in counter-clockwise direction (stays the same direction)
+        #         index = Junction_Pos.DIRECTION.value.index(list(agent_position))
+        #         moving_direction = Movement.DIRECTION.value[index]
+        #     # Right
+        #     elif agent_route[1] == 1:
+        #         # Turns 1 in counter-clockwise direction (turns right)
+        #         index = Junction_Pos.DIRECTION.value.index(list(agent_position))
+        #         moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
+        #     # Left
+        #     elif agent_route[2] == 1:
+        #         if self.visited_positions == 2:
+        #             # Turns 3 in counter-clockwise direction (turns left)
+        #             index = Junction_Pos.DIRECTION.value.index(list(agent_position))
+        #             moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
+        #         else:
+        #             # Turns 0 in counter-clockwise direction (stays the same direction)
+        #             index = Junction_Pos.DIRECTION.value.index(list(agent_position))
+        #             moving_direction = Movement.DIRECTION.value[index]
 
         if moving_direction == Movement.DOWNWARDS.value:
             return agent_position[0] + 1, agent_position[1]
@@ -289,14 +274,8 @@ class ConventionAgent(Agent):
                 for agent in near_agents:
                     index = Ways.DIRECTION.value.index(agent_pos)
                     # in case there is an agent in the junction and is not turning right
-                    if self.is_in_junction(agent[0]) \
-                            and not (agent[1][1] == 1) \
-                            and not (np.array_equiv(agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 4])):
+                    if self.is_in_junction(agent[0]):
                         return BREAK
-
-                    # if self.is_in_junction(agent[0]) and not (agent[1][1] == 1):
-                    #     if np.array_equiv(agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 4]):
-                    #         print("HERE!")
 
                     # in case the agent is in one of the 4 positions
                     near_agent_pos = self.pre_junction(agent[0])
@@ -329,33 +308,28 @@ class ConventionAgent(Agent):
 
         if self.is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
             self.visited_positions += [list(agent_position)]
+            return GAS
 
         # if agent will turn right has priority and will advance
-        if agent_pre_junction_pos and not (agent_route[1] == 1):
+        if agent_pre_junction_pos:
             if near_agents:
                 for near_agent in near_agents:
 
                     index = Ways.DIRECTION.value.index(agent_pre_junction_pos)
                     # in case there is an agent in the junction and is not turning right
-                    if self.is_in_junction(near_agent[0]) \
-                            and not (near_agent[1][1] == 1):
-                            #and not (np.array_equiv(near_agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 4])):
+                    if self.is_in_junction(near_agent[0]):
                         return BREAK
-
-                    # if self.is_in_junction(agent[0]) and not (agent[1][1] == 1):
-                    #     if np.array_equiv(agent[0], Junction_Pos.DIRECTION.value[(index + 2) % 4]):
-                    #         print("HERE!")
 
                     # in case the agent is in one of the 4 positions
                     near_agent_pos = self.pre_junction(near_agent[0])
                     if near_agent_pos:
                         # Checks if near agent is in the right
-                        if near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
+                        if not (Ways.DIRECTION.value[index] == Ways.TOP.value) and near_agent_pos == Ways.DIRECTION.value[(index + 1) % 4]:
                             return BREAK
         if near_agents:
             for near_agent in near_agents:
                 if np.array_equiv(near_agent[0], agent_next_position):
-                    print(f"Agent {self.agent_id} in {agent_position} didn't want to crash with Agent {near_agent[0]} in position")
+                    #print(f"Agent {self.agent_id} in {agent_position} didn't want to crash with Agent {near_agent[0]} in position")
                     return BREAK
         return GAS
 
