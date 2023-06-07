@@ -4,7 +4,7 @@ from gym import Env
 from typing import Sequence
 
 from aasma import Agent
-from aasma.utils import compare_results
+from aasma.utils import compare_results, compare_results_and_collisions
 from aasma.traffic_junction import TrafficJunction
 
 from agents.RandomAgent import RandomAgent
@@ -15,9 +15,9 @@ from agents.ConventionAgent import ConventionAgent
 def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool) -> np.ndarray:
 
     results = np.zeros(n_episodes)
+    collisions = np.zeros(n_episodes)
 
     for episode in range(n_episodes):
-        collisions = 0
         steps = 0
         terminals = [False for _ in range(len(agents))]
         observations = environment.reset()
@@ -28,20 +28,20 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
                 agent.see(observations)
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
-            collisions += info['step_collisions']
+            collisions[episode] += info['step_collisions']
             if render:
                 environment.render()
             observations = next_observations
         results[episode] = steps
 
-        print(f"Total collisions: {collisions}")
+        #print(f"Total collisions: {collisions}")
 
         for agent in agents:
             agent.reset_visited()
 
         environment.close()
 
-    return results
+    return results, collisions
 
 
 if __name__ == '__main__':
@@ -80,13 +80,16 @@ if __name__ == '__main__':
 
     # 3 - Evaluate teams
     results = {}
+    collisions = {}
     for team, agents in teams.items():
-        result = run_multi_agent(environment, agents, opt.episodes, opt.render)
+        result, collision = run_multi_agent(environment, agents, opt.episodes, opt.render)
         results[team] = result
+        collisions[team] = collision
 
-    # 4 - Compare results
-    compare_results(
+    # 4 - Compare results    
+    compare_results_and_collisions(
         results,
+        collisions,
         title="Results on 'Traffic Junction' Environment",
         colors=["orange", "blue", "green"]
     )
