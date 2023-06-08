@@ -178,8 +178,8 @@ class TrafficJunction(gym.Env):
         :return: boolean stating true or false
         :rtype: bool
         """
-        if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
-            print(f"Collision in position {pos}")
+        #if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
+            #print(f"Collision in position {pos}")
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1)
 
     def __is_gate_free(self):
@@ -364,7 +364,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        time.sleep(0.01)
+        time.sleep(0.05)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):
@@ -413,9 +413,12 @@ class TrafficJunction(gym.Env):
         # they should not collide
         if (next_pos is not None) and self.__will_collide(agent_i, agent_actions, agent_curr_positions, []):
             return True
+        
+        elif (next_pos is not None) and self.__check_collision(next_pos):
+            return True
 
         # if doesn't collide return False andupdates position
-        elif next_pos is not None and self._is_cell_vacant(next_pos):
+        elif (next_pos is not None) and self._is_cell_vacant(next_pos):
             self.agent_pos[agent_i] = next_pos
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
             self.__update_agent_view(agent_i)
@@ -452,10 +455,15 @@ class TrafficJunction(gym.Env):
     def __will_collide(self, agent_i, agent_actions, agent_curr_positions, visited_positions):
         
         next_pos = self.__get_next_position(agent_i, agent_actions)
+        
+        # if next position is in visited positions
         if (next_pos is not None) and visited_positions != [] and (list(next_pos) in visited_positions):
             return True
 
+        # if next position is not in agent_curr_positions
         elif (next_pos is not None) and visited_positions != [] and (list(next_pos) not in agent_curr_positions):
+            if self.__check_collision(next_pos):
+                return True
             return False
         
         # recursively gets the next position of the near agent to see if they will colide. If the other agent moves and liberates the cell
