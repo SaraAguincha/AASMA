@@ -6,10 +6,12 @@ from typing import Sequence
 from aasma import Agent
 from aasma.utils import compare_results, compare_results_and_collisions
 from aasma.traffic_junction import TrafficJunction
+from agents.CommunicationHandler import CommunicationHandler
 
 from agents.RandomAgent import RandomAgent
 from agents.GreedyAgent import GreedyAgent
 from agents.ConventionAgent import ConventionAgent
+from agents.CommunicatingAgent import CommunicatingAgent
 
 
 def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool) -> np.ndarray:
@@ -24,9 +26,10 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         while not all(terminals):
             steps += 1
-            #print("\n")
+            print("\n")
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
+            communication_handler.update_agents(list(agents))
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
             collisions[episode] += info['step_collisions']
@@ -55,7 +58,8 @@ if __name__ == '__main__':
     parser.add_argument("--render", action='store_true')
     parser.add_argument("--random", "-r", action='store_true')
     parser.add_argument("--greedy", "-g", action='store_true')
-    parser.add_argument("--conventional", "-c", action='store_true')
+    parser.add_argument("--conventional", "-con", action='store_true')
+    parser.add_argument("--communicating", "-com", action='store_true')
     parser.add_argument("--all", "-a", action='store_true')
 
     opt = parser.parse_args()
@@ -67,6 +71,7 @@ if __name__ == '__main__':
 
     # 1 - Setup the environment
     environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5, max_steps=opt.maxsteps)
+    communication_handler = CommunicationHandler()
 
     # 2 - Setup the teams
     teams = {}
@@ -74,10 +79,12 @@ if __name__ == '__main__':
         teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]
     if opt.greedy: teams["Greedy Team"] = []
     if opt.conventional: teams["Convention Team"] = []
+    if opt.communicating: teams["Communicating Team"] = []
 
     for i in range(1, opt.agents + 1):
         if opt.greedy: teams["Greedy Team"].append(GreedyAgent(agent_id=i, n_agents=opt.agents))
         if opt.conventional: teams["Convention Team"].append(ConventionAgent(agent_id=i, n_agents=opt.agents))
+        if opt.communicating: teams["Communicating Team"].append(CommunicatingAgent(agent_id=i, n_agents=opt.agents, communication_handler=communication_handler))
 
     # 3 - Evaluate teams
     results = {}

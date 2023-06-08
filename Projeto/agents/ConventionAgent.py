@@ -55,14 +55,14 @@ class ConventionAgent(Agent):
         agent_route = self.observation[2][2][self.n_agents + 2:]
 
         # get all the positions nearby agents that it can observe, except himself
-        near_agents = self.get_near_agents(agent_position)
+        near_agents = self.__get_near_agents(agent_position)
 
         # stops at the intersection, gives priority to the right, if a car is in the junction stops
         # currently top has priority and always advances if no car is in the junction
 
-        self.update_moving_direction(agent_position, agent_route)
+        self.__update_moving_direction(agent_position, agent_route)
 
-        action = self.get_action(agent_position, near_agents)
+        action = self.__get_action(agent_position, near_agents)
 
         #action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
@@ -72,7 +72,7 @@ class ConventionAgent(Agent):
     # Auxiliary Methods #
     # ################# #
 
-    def get_near_agents(self, agent_position):
+    def __get_near_agents(self, agent_position):
         """
         TODO - add description for observation
         
@@ -98,7 +98,7 @@ class ConventionAgent(Agent):
         return near_agents
 
     # hardcoded see if its in the junction
-    def is_in_junction(self, agent_position):
+    def __is_in_junction(self, agent_position):
 
         if np.array_equiv([6, 7], agent_position) \
                 or np.array_equiv([6, 6], agent_position) \
@@ -107,7 +107,7 @@ class ConventionAgent(Agent):
             return True
         return False
 
-    def pre_junction(self, agent_position):
+    def __pre_junction(self, agent_position):
         if np.array_equiv(Pre_Junction.TOP.value, agent_position):
             return Pre_Junction.TOP.value
 
@@ -121,8 +121,8 @@ class ConventionAgent(Agent):
             return Pre_Junction.LEFT.value
         return []
 
-    def update_moving_direction(self, agent_position, agent_route):
-        if self.is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
+    def __update_moving_direction(self, agent_position, agent_route):
+        if self.__is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
             self.visited_positions += [list(agent_position)]
 
         if list(agent_position) in Junction_Pos.DIRECTION.value:
@@ -155,7 +155,7 @@ class ConventionAgent(Agent):
             self.moving_direction = Movement.LEFTWARDS.value
         #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.get_next_position(agent_position)} ")
 
-    def get_next_position(self, agent_position):
+    def __get_next_position(self, agent_position):
         if self.moving_direction == Movement.DOWNWARDS.value:
             return agent_position[0] + 1, agent_position[1]
         elif self.moving_direction == Movement.UPWARDS.value:
@@ -166,7 +166,7 @@ class ConventionAgent(Agent):
             return agent_position[0], agent_position[1] - 1
         return []
 
-    def get_action(self, agent_position, near_agents):
+    def __get_action(self, agent_position, near_agents):
         """
         With the arguments given, returns the action it should take.
             - Stops if other car is in junction
@@ -184,13 +184,13 @@ class ConventionAgent(Agent):
         # agent[0] is agent position, agent[1] is agent route
 
         # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position
-        is_pre_junction = self.pre_junction(agent_position)
+        is_pre_junction = self.__pre_junction(agent_position)
         if is_pre_junction:
             self.pre_junction_pos = is_pre_junction
-        agent_next_position = self.get_next_position(agent_position)
+        agent_next_position = self.__get_next_position(agent_position)
 
         # If agent is in the junction, keep moving
-        if self.is_in_junction(agent_position):
+        if self.__is_in_junction(agent_position):
             return GAS
 
         # If there are agents nearby might need to stop
@@ -207,10 +207,10 @@ class ConventionAgent(Agent):
                     for near_agent in near_agents:
                         index = Pre_Junction.DIRECTION.value.index(is_pre_junction)
                         # If there is another agent in the junction
-                        if self.is_in_junction(near_agent[0]):
+                        if self.__is_in_junction(near_agent[0]):
                             return BREAK
 
-                        near_agent_pos = self.pre_junction(near_agent[0])
+                        near_agent_pos = self.__pre_junction(near_agent[0])
                         # If another agent is in the entrance of the junction - obtains yield properties
                         if near_agent_pos:
                             # Checks if near agent is in the top - top is hardcoded as max priority

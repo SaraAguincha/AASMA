@@ -2,6 +2,8 @@ import numpy as np
 from aasma import Agent
 from enum import Enum
 
+from agents import CommunicationHandler
+
 N_ACTIONS = 2
 GAS, BREAK = range(N_ACTIONS)
 
@@ -40,13 +42,15 @@ class CommunicatingAgent(Agent):
     but follows the convention of giving priority to the car if it's on his right.
     """
 
-    def __init__(self, agent_id, n_agents):
+    def __init__(self, agent_id, n_agents, communication_handler: CommunicationHandler):
         super(CommunicatingAgent, self).__init__(f"Convention Agent")
         self.agent_id = agent_id
         self.n_agents = n_agents
         self.n_actions = N_ACTIONS
+        self.visited_positions = []
         self.moving_direction = ""
         self.pre_junction_pos = []
+        self.communication_handler = communication_handler
 
     def action(self) -> int:
 
@@ -56,24 +60,34 @@ class CommunicatingAgent(Agent):
         agent_route = self.observation[2][2][self.n_agents + 2:]
 
         # get all the positions nearby agents that it can observe, except himself
-        near_agents = self.get_near_agents(self.observation, self.n_agents, agent_position)
+        near_agents = self.__get_near_agents(agent_position)
 
         # stops at the intersection, gives priority to the right, if a car is in the junction stops
         # currently top has priority and always advances if no car is in the junction
 
-        self.update_moving_direction(agent_position, agent_route)
+        self.__update_moving_direction(agent_position, agent_route)
 
-        action = self.get_action_v1(agent_position, near_agents)
+        action = self.__get_action(agent_position, near_agents)
 
         # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
         return action
 
+    def get_moving_direction(self):
+        return self.moving_direction
+
+    def get_agent_position(self):
+        if len(self.observation) != 0:
+            return self.observation[2][2][self.n_agents:self.n_agents + 2]
+        return []
     # ################# #
     # Auxiliary Methods #
     # ################# #
 
-    def get_near_agents(self, agent_position):
+    def __request_moving_direction(self, agent_position):
+        return self.communication_handler.request_moving_direction(agent_position)
+
+    def __get_near_agents(self, agent_position):
         """
         TODO - add description for observation
 
@@ -99,7 +113,7 @@ class CommunicatingAgent(Agent):
         return near_agents
 
     # hardcoded see if its in the junction
-    def is_in_junction(self, agent_position):
+    def __is_in_junction(self, agent_position):
 
         if np.array_equiv([6, 7], agent_position) \
                 or np.array_equiv([6, 6], agent_position) \
@@ -108,7 +122,7 @@ class CommunicatingAgent(Agent):
             return True
         return False
 
-    def pre_junction(self, agent_position):
+    def __pre_junction(self, agent_position):
         if np.array_equiv(Pre_Junction.TOP.value, agent_position):
             return Pre_Junction.TOP.value
 
@@ -122,8 +136,8 @@ class CommunicatingAgent(Agent):
             return Pre_Junction.LEFT.value
         return []
 
-    def update_moving_direction(self, agent_position, agent_route):
-        if self.is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
+    def __update_moving_direction(self, agent_position, agent_route):
+        if self.__is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
             self.visited_positions += [list(agent_position)]
 
         if list(agent_position) in Junction_Pos.DIRECTION.value:
@@ -154,20 +168,20 @@ class CommunicatingAgent(Agent):
             self.moving_direction = Movement.RIGHTWARDS.value
         elif agent_position[0] == 6:
             self.moving_direction = Movement.LEFTWARDS.value
-        # print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.get_next_position(agent_position)} ")
+        print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)} ")
 
-    def get_next_position(self, agent_position):
-        if self.moving_direction == Movement.DOWNWARDS.value:
+    def __get_next_position(self, agent_position, moving_direction):
+        if moving_direction == Movement.DOWNWARDS.value:
             return agent_position[0] + 1, agent_position[1]
-        elif self.moving_direction == Movement.UPWARDS.value:
+        elif moving_direction == Movement.UPWARDS.value:
             return agent_position[0] - 1, agent_position[1]
-        elif self.moving_direction == Movement.RIGHTWARDS.value:
+        elif moving_direction == Movement.RIGHTWARDS.value:
             return agent_position[0], agent_position[1] + 1
-        elif self.moving_direction == Movement.LEFTWARDS.value:
+        elif moving_direction == Movement.LEFTWARDS.value:
             return agent_position[0], agent_position[1] - 1
         return []
 
-    def get_action(self, agent_position, near_agents):
+    def __get_action(self, agent_position, near_agents):
         """
         With the arguments given, returns the action it should take.
             - Stops if other car is in junction
@@ -185,13 +199,13 @@ class CommunicatingAgent(Agent):
         # agent[0] is agent position, agent[1] is agent route
 
         # agent_pos will have only the list with positions if is in one of the 4 pre_junction_position
-        is_pre_junction = self.pre_junction(agent_position)
+        is_pre_junction = self.__pre_junction(agent_position)
         if is_pre_junction:
             self.pre_junction_pos = is_pre_junction
-        agent_next_position = self.get_next_position(agent_position)
+        agent_next_position = self.__get_next_position(agent_position, self.moving_direction)
 
         # If agent is in the junction, keep moving
-        if self.is_in_junction(agent_position):
+        if self.__is_in_junction(agent_position):
             return GAS
 
         # If there are agents nearby might need to stop
@@ -208,10 +222,11 @@ class CommunicatingAgent(Agent):
                     for near_agent in near_agents:
                         index = Pre_Junction.DIRECTION.value.index(is_pre_junction)
                         # If there is another agent in the junction
-                        if self.is_in_junction(near_agent[0]):
-                            return BREAK
+                        if self.__is_in_junction(near_agent[0]):
+                            if self.__is_in_junction(self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))):
+                                return BREAK
 
-                        near_agent_pos = self.pre_junction(near_agent[0])
+                        near_agent_pos = self.__pre_junction(near_agent[0])
                         # If another agent is in the entrance of the junction - obtains yield properties
                         if near_agent_pos:
                             # Checks if near agent is in the top - top is hardcoded as max priority
