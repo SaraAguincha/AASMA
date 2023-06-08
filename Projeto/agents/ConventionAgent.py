@@ -187,7 +187,7 @@ class ConventionAgent(Agent):
         is_pre_junction = self.__pre_junction(agent_position)
         if is_pre_junction:
             self.pre_junction_pos = is_pre_junction
-        agent_next_position = self.__get_next_position(agent_position)
+        agent_next_position = self.__get_next_position(agent_position, self.moving_direction)
 
         # If agent is in the junction, keep moving
         if self.__is_in_junction(agent_position):

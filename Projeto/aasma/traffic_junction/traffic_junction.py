@@ -179,7 +179,8 @@ class TrafficJunction(gym.Env):
         :rtype: bool
         """
         if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
-            print(f"Collision in position {pos}")
+            #print(f"---\n---\n---\nCollision in position {pos}\n---\n---\n---")
+            pass
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1)
 
     def __is_gate_free(self):

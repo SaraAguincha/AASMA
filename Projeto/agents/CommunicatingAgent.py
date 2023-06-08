@@ -31,10 +31,10 @@ class Movement(Enum):
     LEFTWARDS = "Leftwards"
     UPWARDS = "Upwards"
     RIGHTWARDS = "Rightwards"
+    # Ordered counter-clockwise directions
+    DIRECTION = [DOWNWARDS, RIGHTWARDS, UPWARDS, LEFTWARDS]
 
-    CORRESPONDING_DIRECTION = [DOWNWARDS, RIGHTWARDS, UPWARDS, LEFTWARDS]
-
-    DIRECTION = [DOWNWARDS, LEFTWARDS, UPWARDS, RIGHTWARDS]
+    #DIRECTION = [DOWNWARDS, LEFTWARDS, UPWARDS, RIGHTWARDS]
 
 class CommunicatingAgent(Agent):
     """
@@ -172,18 +172,16 @@ class CommunicatingAgent(Agent):
             elif agent_route[1] == 1:
                 # Turns 1 in counter-clockwise direction (turns right)
                 index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                real_index = Movement.DIRECTION.value.index(Movement.CORRESPONDING_DIRECTION.value[index])
-                self.moving_direction = Movement.DIRECTION.value[(real_index + 1) % 4]
+                self.moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
             # Left
             elif agent_route[2] == 1:
                 # This means it's time to turn
                 if len(self.visited_positions) == 2:
                     # Turns 3 in counter-clockwise direction (turns left)
                     index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                    real_index = Movement.DIRECTION.value.index(Movement.CORRESPONDING_DIRECTION.value[index])
                     #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
-                    self.moving_direction = Movement.DIRECTION.value[(real_index + 3) % 4]
-                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 3) % 4]}")
+                    self.moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
+                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 1) % 4]}")
                 else:
                     # Turns 0 in counter-clockwise direction (stays the same direction)
                     pass
