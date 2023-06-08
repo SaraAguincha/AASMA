@@ -12,6 +12,7 @@ from agents.RandomAgent import RandomAgent
 from agents.GreedyAgent import GreedyAgent
 from agents.ConventionAgent import ConventionAgent
 from agents.CommunicatingAgent import CommunicatingAgent
+from agents.WaitingAgent import WaitingAgent
 
 
 def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool) -> np.ndarray:
@@ -42,6 +43,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         for agent in agents:
             agent.reset_visited()
+            agent.reset_waiting_time()
 
         environment.close()
 
@@ -60,6 +62,7 @@ if __name__ == '__main__':
     parser.add_argument("--greedy", "-g", action='store_true')
     parser.add_argument("--conventional", "-con", action='store_true')
     parser.add_argument("--communicating", "-com", action='store_true')
+    parser.add_argument("--waiting", "-w", action='store_true')
     parser.add_argument("--all", "-a", action='store_true')
 
     opt = parser.parse_args()
@@ -68,6 +71,8 @@ if __name__ == '__main__':
         opt.random = True
         opt.greedy = True
         opt.conventional = True
+        opt.communicating = True
+        opt.waiting = True
 
     # 1 - Setup the environment
     environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5, max_steps=opt.maxsteps)
@@ -80,11 +85,13 @@ if __name__ == '__main__':
     if opt.greedy: teams["Greedy Team"] = []
     if opt.conventional: teams["Convention Team"] = []
     if opt.communicating: teams["Communicating Team"] = []
+    if opt.waiting: teams["Waiting Team"] = []
 
     for i in range(1, opt.agents + 1):
         if opt.greedy: teams["Greedy Team"].append(GreedyAgent(agent_id=i, n_agents=opt.agents))
         if opt.conventional: teams["Convention Team"].append(ConventionAgent(agent_id=i, n_agents=opt.agents))
         if opt.communicating: teams["Communicating Team"].append(CommunicatingAgent(agent_id=i, n_agents=opt.agents, communication_handler=communication_handler))
+        if opt.waiting: teams["Waiting Team"].append(WaitingAgent(agent_id=i, n_agents=opt.agents, communication_handler=communication_handler))
 
     # 3 - Evaluate teams
     results = {}
@@ -99,6 +106,6 @@ if __name__ == '__main__':
         results,
         collisions,
         title="Results on 'Traffic Junction' Environment",
-        colors=["orange", "blue", "green"]
+        colors=["orange", "blue", "green", "red"]
     )
 

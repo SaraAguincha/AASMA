@@ -38,12 +38,17 @@ class Agent(ABC):
     def __init__(self, name: str):
         self.name = name
         self.observation = None
+        self.visited_positions = []
+        self.waiting_time = 0
 
     def see(self, observation: np.ndarray):
         self.observation = observation
 
     def reset_visited(self):
         self.visited_positions = []
+
+    def reset_waiting_time(self):
+        self.waiting_time = 0
 
     @abstractmethod
     def action(self) -> int:

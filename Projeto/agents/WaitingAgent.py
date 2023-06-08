@@ -36,7 +36,7 @@ class Movement(Enum):
 
     #DIRECTION = [DOWNWARDS, LEFTWARDS, UPWARDS, RIGHTWARDS]
 
-class CommunicatingAgent(Agent):
+class WaitingAgent(Agent):
     """
     A baseline agent for the TrafficJunction environment.
     The greedy agent always tries to advance to reach its destination faster,
@@ -44,13 +44,16 @@ class CommunicatingAgent(Agent):
     """
 
     def __init__(self, agent_id, n_agents, communication_handler: CommunicationHandler):
-        super(CommunicatingAgent, self).__init__(f"Communicating Agent")
+        super(WaitingAgent, self).__init__(f"Waiting Agent")
         self.agent_id = agent_id
         self.n_agents = n_agents
         self.n_actions = N_ACTIONS
         self.visited_positions = []
         self.moving_direction = ""
         self.pre_junction_pos = []
+        self.waiting_time = 0
+        # highest_waiting[0] - waiting_time; highest_waiting[1] - axis
+        self.highest_waiting = None
         self.communication_handler = communication_handler
 
     def action(self) -> int:
@@ -68,7 +71,11 @@ class CommunicatingAgent(Agent):
 
         self.__update_moving_direction(agent_position, agent_route)
 
+        self.__cast_waiting_time(nearby_agents=near_agents)
+
         action = self.__get_action(agent_position, near_agents)
+
+        self.waiting_time += 1
 
         # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
@@ -81,32 +88,43 @@ class CommunicatingAgent(Agent):
         if len(self.observation) != 0:
             return self.observation[2][2][self.n_agents:self.n_agents + 2]
         return []
+
+    def receive_waiting_time(self, waiting_time, axis):
+        if self.highest_waiting:
+            if self.highest_waiting[0] < waiting_time:
+                self.highest_waiting = [waiting_time, axis]
+            # If drawn, VERTICAL will be the prioritized axis
+            elif self.highest_waiting[0] == waiting_time:
+                self.highest_waiting = [waiting_time, "Vertical"]
+        else:
+            if self.waiting_time < waiting_time:
+                self.highest_waiting = [waiting_time, axis]
+            elif self.waiting_time == waiting_time:
+                self.highest_waiting = [waiting_time, "Vertical"]
+            elif self.waiting_time > waiting_time and list(self.get_agent_position()) in Pre_Junction.DIRECTION.value:
+                self_axis = None
+                index = Pre_Junction.DIRECTION.value.index(list(self.get_agent_position()))
+                if index % 2 == 0:
+                    self_axis = "Horizontal"
+                else:
+                    self_axis = "Vertical"
+                self.highest_waiting = [self.waiting_time, self_axis]
+
+
     # ################# #
     # Auxiliary Methods #
     # ################# #
 
-    # def __turn_left(self, direction: str):
-    #     if direction == Movement.DOWNWARDS.value:
-    #         return Movement.RIGHTWARDS.value
-    #     elif direction == Movement.UPWARDS.value:
-    #         return Movement.LEFTWARDS.value
-    #     elif direction == Movement.RIGHTWARDS.value:
-    #         return Movement.UPWARDS.value
-    #     elif direction == Movement.LEFTWARDS.value:
-    #         return Movement.DOWNWARDS.value
-    #     return []
-    #
-    # def __turn_right(self, direction: str):
-    #     if direction == Movement.DOWNWARDS.value:
-    #         return Movement.LEFTWARDS.value
-    #     elif direction == Movement.UPWARDS.value:
-    #         return Movement.RIGHTWARDS.value
-    #     elif direction == Movement.RIGHTWARDS.value:
-    #         return Movement.DOWNWARDS.value
-    #     elif direction == Movement.LEFTWARDS.value:
-    #         return Movement.UPWARDS.value
-    #     return []
-
+    def __cast_waiting_time(self, nearby_agents):
+        axis = None
+        if nearby_agents and self.__pre_junction(self.get_agent_position()):
+            index = Pre_Junction.DIRECTION.value.index(list(self.get_agent_position()))
+            if index % 2 == 0:
+                axis = "Horizontal"
+            else:
+                axis = "Vertical"
+            for near_agent in nearby_agents:
+                self.communication_handler.send_waiting_time(near_agent[0], self.waiting_time, axis=axis)
     def __request_moving_direction(self, agent_position):
         return self.communication_handler.request_moving_direction(agent_position)
 
@@ -193,7 +211,7 @@ class CommunicatingAgent(Agent):
             self.moving_direction = Movement.RIGHTWARDS.value
         elif agent_position[0] == 6:
             self.moving_direction = Movement.LEFTWARDS.value
-        #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)} ")
+        #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)}, waiting for {self.waiting_time} steps")
 
     def __get_next_position(self, agent_position, moving_direction):
         if moving_direction == Movement.DOWNWARDS.value:
@@ -245,17 +263,24 @@ class CommunicatingAgent(Agent):
                     index = Pre_Junction.DIRECTION.value.index(is_pre_junction)
                     # If there is another agent in the junction
                     if self.__is_in_junction(near_agent[0]):
-                        if self.__is_in_junction(self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))):
-                            return BREAK
+                        #if self.__is_in_junction(self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))):
+                        return BREAK
 
                     near_agent_pos = self.__pre_junction(near_agent[0])
                     # If another agent is in the entrance of the junction - obtains yield properties
-                    if near_agent_pos:
-                        # Checks if near agent is in the top - top is hardcoded as max priority
-                        if not (Pre_Junction.DIRECTION.value[index] == Pre_Junction.TOP.value) and near_agent_pos == \
-                                Pre_Junction.DIRECTION.value[(index + 1) % 4]:
-                            return BREAK
-                        # If top is max priority, left must yield to everyone
-                        if Pre_Junction.DIRECTION.value[index] == Pre_Junction.LEFT.value:
-                            return BREAK
+                    if near_agent_pos and self.highest_waiting:
+                        # Priority is given to the axis that has an agent waiting for the most time
+                        if self.highest_waiting[1] == "Horizontal":
+                            if not (Pre_Junction.DIRECTION.value[index] == Pre_Junction.LEFT.value or Pre_Junction.DIRECTION.value[index] == Pre_Junction.RIGHT.value):
+                                return BREAK
+                        elif self.highest_waiting[1] == "Vertical":
+                            if not (Pre_Junction.DIRECTION.value[index] == Pre_Junction.TOP.value or Pre_Junction.DIRECTION.value[index] == Pre_Junction.DOWN.value):
+                                return BREAK
+
+                        # if not (Pre_Junction.DIRECTION.value[index] == Pre_Junction.TOP.value) and near_agent_pos == \
+                        #         Pre_Junction.DIRECTION.value[(index + 1) % 4]:
+                        #     return BREAK
+                        # # If top is max priority, left must yield to everyone
+                        # if Pre_Junction.DIRECTION.value[index] == Pre_Junction.LEFT.value:
+                        #     return BREAK
         return GAS

@@ -17,4 +17,14 @@ class CommunicationHandler:
             if np.array_equiv(agent_position, agent.get_agent_position()):
                 receiving_agent = agent
                 break
-        return receiving_agent.get_moving_direction()
+        if receiving_agent:
+            return receiving_agent.get_moving_direction()
+
+    def send_waiting_time(self, agent_position, waiting_time, axis):
+        receiving_agent = None
+        for agent in self.agents:
+            if np.array_equiv(agent_position, agent.get_agent_position()):
+                receiving_agent = agent
+                break
+        if receiving_agent:
+            receiving_agent.receive_waiting_time(waiting_time, axis)
