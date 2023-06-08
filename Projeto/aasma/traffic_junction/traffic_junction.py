@@ -179,8 +179,7 @@ class TrafficJunction(gym.Env):
         :rtype: bool
         """
         if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
-            #print(f"---\n---\n---\nCollision in position {pos}\n---\n---\n---")
-            pass
+            print(f"Collision in position {pos}")
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1)
 
     def __is_gate_free(self):
@@ -317,10 +316,18 @@ class TrafficJunction(gym.Env):
         # checks if there is a collision; this is done in the __update_agent_pos method
         # we still need to check both agent_dones and on_the_road because an agent may not be done
         # and have not entered the road yet 
+        
+        agent_curr_positions = []
+        
+        for agent_i, action in enumerate(agents_action):
+            if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
+                agent_curr_positions += [list(self.agent_pos[agent_i]),]
+        
+        
         for agent_i, action in enumerate(agents_action):
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
                 self._agent_step_count[agent_i] += 1  # agent step count
-                collision_flag = self.__update_agent_pos(agent_i, action)
+                collision_flag = self.__update_agent_pos(agent_i, agents_action, agent_curr_positions)
                 if collision_flag:
                     rewards[agent_i] += self._collision_reward
                     step_collisions += 1
@@ -357,7 +364,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        time.sleep(0)
+        time.sleep(0.01)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):
@@ -380,7 +387,7 @@ class TrafficJunction(gym.Env):
 
         return new_dir_vector
 
-    def __update_agent_pos(self, agent_i, move):
+    def __update_agent_pos(self, agent_i, agent_actions, agent_curr_positions):
         """
         Updates the agent position in the environment. Moves can be 0 (GAS) or 1 (BRAKE). If the move is 1 does nothing,
         car remains stopped. If the move is 0 then evaluate the route assigned. If the route is 1 (forward) then
@@ -399,10 +406,29 @@ class TrafficJunction(gym.Env):
         """
 
         curr_pos = copy.copy(self.agent_pos[agent_i])
+        next_pos = self.__get_next_position(agent_i, agent_actions)
+        route = self._agents_routes[agent_i]
+        
+        # recursively gets the next position of the near agent to see if they will colide. If the other agent moves and liberates the cell
+        # they should not collide
+        if (next_pos is not None) and self.__will_collide(agent_i, agent_actions, agent_curr_positions, []):
+            return True
+
+        # if doesn't collide return False andupdates position
+        elif next_pos is not None and self._is_cell_vacant(next_pos):
+            self.agent_pos[agent_i] = next_pos
+            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
+            self.__update_agent_view(agent_i)
+
+        return False
+    
+    def __get_next_position(self, agent_i, agent_actions):
+        
+        curr_pos = copy.copy(self.agent_pos[agent_i])
         next_pos = None
         route = self._agents_routes[agent_i]
 
-        if move == 0:  # GAS
+        if agent_actions[agent_i] == 0:  # GAS
             if route == 1:
                 next_pos = tuple([curr_pos[i] + self._agents_direction[agent_i][i] for i in range(len(curr_pos))])
             else:
@@ -415,23 +441,31 @@ class TrafficJunction(gym.Env):
                     next_pos = tuple([curr_pos[i] + new_dir_vector[i] for i in range(len(curr_pos))])
                 else:
                     next_pos = tuple([curr_pos[i] + self._agents_direction[agent_i][i] for i in range(len(curr_pos))])
-        elif move == 1:  # BRAKE
+        elif agent_actions[agent_i] == 1:  # BRAKE
             pass
         else:
             raise Exception('Action Not found!')
-
-        # if there is a collision
-        if next_pos is not None and self.__check_collision(next_pos):
+        
+        return next_pos
+    
+    
+    def __will_collide(self, agent_i, agent_actions, agent_curr_positions, visited_positions):
+        
+        next_pos = self.__get_next_position(agent_i, agent_actions)
+        if (next_pos is not None) and visited_positions != [] and (list(next_pos) in visited_positions):
             return True
 
-        # if there is no collision and the next position is free updates agent position
-        if next_pos is not None and self._is_cell_vacant(next_pos):
-            self.agent_pos[agent_i] = next_pos
-            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
-            self.__update_agent_view(agent_i)
-            
-
-        return False
+        elif (next_pos is not None) and visited_positions != [] and (list(next_pos) not in agent_curr_positions):
+            return False
+        
+        # recursively gets the next position of the near agent to see if they will colide. If the other agent moves and liberates the cell
+        # they should not collide
+        elif (next_pos is not None) and (list(next_pos) not in visited_positions) and (list(next_pos) in agent_curr_positions):
+            visited_positions += [agent_curr_positions[agent_curr_positions.index(list(next_pos))],]
+            if self.__will_collide(agent_curr_positions.index(list(next_pos)), agent_actions, agent_curr_positions, visited_positions):
+                return True
+            else:
+                return False
 
     def reset(self):
         """
