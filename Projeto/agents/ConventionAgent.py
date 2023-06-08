@@ -155,14 +155,14 @@ class ConventionAgent(Agent):
             self.moving_direction = Movement.LEFTWARDS.value
         #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.get_next_position(agent_position)} ")
 
-    def __get_next_position(self, agent_position):
-        if self.moving_direction == Movement.DOWNWARDS.value:
+    def __get_next_position(self, agent_position, moving_direction):
+        if moving_direction == Movement.DOWNWARDS.value:
             return agent_position[0] + 1, agent_position[1]
-        elif self.moving_direction == Movement.UPWARDS.value:
+        elif moving_direction == Movement.UPWARDS.value:
             return agent_position[0] - 1, agent_position[1]
-        elif self.moving_direction == Movement.RIGHTWARDS.value:
+        elif moving_direction == Movement.RIGHTWARDS.value:
             return agent_position[0], agent_position[1] + 1
-        elif self.moving_direction == Movement.LEFTWARDS.value:
+        elif moving_direction == Movement.LEFTWARDS.value:
             return agent_position[0], agent_position[1] - 1
         return []
 

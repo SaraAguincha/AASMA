@@ -26,7 +26,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         while not all(terminals):
             steps += 1
-            print("\n")
+            #print("\n")
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
             communication_handler.update_agents(list(agents))
