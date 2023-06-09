@@ -29,7 +29,6 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         while not all(terminals):
             steps += 1
-            #print("\n")
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
                 agent.update_moving_direction()
@@ -42,16 +41,12 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
             observations = next_observations
         results[episode] = steps
 
-        print(f"-\n-\n-\nTotal collisions: {collisions[episode]}\n-\n-\n-")
-
         for agent in agents:
             agent.reset_visited()
             agent.reset_waiting_time()
+            agent.reset_has_entered_junction()
 
         environment.close()
-
-        # if (collisions[episode] != 0):
-        #     break
 
     return results, collisions
 
@@ -84,7 +79,7 @@ if __name__ == '__main__':
     environment = TrafficJunction(grid_shape=(14, 14), step_cost=-0.01, n_max=opt.agents, collision_reward=-10, arrive_prob=0.5, max_steps=opt.maxsteps)
     communication_handler = CommunicationHandler()
 
-    # 2 - Setup the teams
+    # 2 - Set up the teams
     teams = {}
     if opt.random:
         teams["Random Team"] = [RandomAgent(environment.action_space[i].n) for i in range(environment.n_agents)]

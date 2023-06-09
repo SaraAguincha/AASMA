@@ -394,7 +394,7 @@ class TrafficJunction(gym.Env):
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
         #print("end of step\n")
-        time.sleep(0.1)
+        time.sleep(0)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
     def __get_next_direction(self, route, agent_i):
@@ -580,6 +580,8 @@ class TrafficJunction(gym.Env):
                 agent_i += 1
                 continue
             elif new_agents_positions[agent_i] == agent_curr_positions[agent_i]:
+                self.agent_pos[agent_i] = tuple(new_agents_positions[agent_i])
+                self.__update_agent_view(agent_i)
                 agent_i += 1
                 continue
             else:
@@ -591,7 +593,7 @@ class TrafficJunction(gym.Env):
            
 
         #print("end update\n")
-        print(f"Collided: {collided_agents_i}")
+        #print(f"Collided: {collided_agents_i}")
         return len(collided_agents_i)
     
     def __find_indices(self, list_to_check, item_to_find):

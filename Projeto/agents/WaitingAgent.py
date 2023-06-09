@@ -34,8 +34,6 @@ class Movement(Enum):
     # Ordered counter-clockwise directions
     DIRECTION = [DOWNWARDS, RIGHTWARDS, UPWARDS, LEFTWARDS]
 
-    #DIRECTION = [DOWNWARDS, LEFTWARDS, UPWARDS, RIGHTWARDS]
-
 class WaitingAgent(Agent):
     """
     A baseline agent for the TrafficJunction environment.
@@ -86,9 +84,10 @@ class WaitingAgent(Agent):
         else:
             self.waiting_time = 0
 
-        # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
-
         return action
+
+    def reset_has_entered_junction(self):
+        self.has_entered_junction = False
 
     def get_moving_direction(self):
         return self.moving_direction
@@ -143,9 +142,7 @@ class WaitingAgent(Agent):
                 if len(self.visited_positions) == 2:
                     # Turns 3 in counter-clockwise direction (turns left)
                     index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                    #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
                     self.moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
-                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 1) % 4]}")
                 else:
                     # Turns 0 in counter-clockwise direction (stays the same direction)
                     pass
@@ -172,6 +169,7 @@ class WaitingAgent(Agent):
             else:
                 axis = "Vertical"
             for near_agent in nearby_agents:
+                #print(f"Message: {near_agent[0]}, {self.waiting_time}, {axis}")
                 self.communication_handler.send_waiting_time(near_agent[0], self.waiting_time, axis=axis)
     def __request_moving_direction(self, agent_position):
         return self.communication_handler.request_moving_direction(agent_position)
@@ -264,10 +262,6 @@ class WaitingAgent(Agent):
         # If there are agents nearby might need to stop
         if near_agents:
             for near_agent in near_agents:
-                # If agent is in the junction, keep moving, unless the way is blocked
-                # if self.__is_in_junction(agent_position):
-                #     if np.array_equiv(agent_next_position, near_agent[0]):
-                #         return BREAK
                 # If it hasn't yet reached the entrance of the junction
                 if not is_pre_junction:
                     if np.array_equiv(near_agent[0], agent_next_position):

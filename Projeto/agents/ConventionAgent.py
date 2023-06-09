@@ -64,8 +64,6 @@ class ConventionAgent(Agent):
 
         action = self.__get_action(agent_position, near_agents)
 
-        #action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
-
         return action
 
     # ################# #
@@ -199,7 +197,6 @@ class ConventionAgent(Agent):
             if not is_pre_junction:
                 for near_agent in near_agents:
                     if np.array_equiv(near_agent[0], agent_next_position):
-                        # print(f"Agent {self.agent_id} in {agent_position} didn't want to crash with Agent {near_agent[0]} in position")
                         return BREAK
             # If it has already reached the entrance of the junction
             else:

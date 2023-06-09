@@ -50,6 +50,9 @@ class Agent(ABC):
     def reset_waiting_time(self):
         self.waiting_time = 0
 
+    def reset_has_entered_junction(self):
+        pass
+
     def update_moving_direction(self):
         pass
     @abstractmethod

@@ -60,8 +60,6 @@ class CommunicatingAgent(Agent):
 
         agent_route = self.observation[2][2][self.n_agents + 2:]
 
-        #self.__update_moving_direction(agent_position, agent_route)
-
         # get all the positions nearby agents that it can observe, except himself
         near_agents = self.__get_near_agents(agent_position)
 
@@ -69,8 +67,6 @@ class CommunicatingAgent(Agent):
         # currently top has priority and always advances if no car is in the junction
 
         action = self.__get_action(agent_position, near_agents)
-
-        # action_v2 = self.get_action_v2(agent_position, agent_route, near_agents)
 
         return action
 
@@ -107,9 +103,7 @@ class CommunicatingAgent(Agent):
                 if len(self.visited_positions) == 2:
                     # Turns 3 in counter-clockwise direction (turns left)
                     index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                    #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
                     self.moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
-                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 1) % 4]}")
                 else:
                     # Turns 0 in counter-clockwise direction (stays the same direction)
                     pass
@@ -217,10 +211,6 @@ class CommunicatingAgent(Agent):
         # If there are agents nearby might need to stop
         if near_agents:
             for near_agent in near_agents:
-                # If agent is in the junction, keep moving, unless the way is blocked
-                # if self.__is_in_junction(agent_position):
-                #     if np.array_equiv(agent_next_position, near_agent[0]):
-                #         return BREAK
                 # If it hasn't yet reached the entrance of the junction
                 if not is_pre_junction:
                     if np.array_equiv(near_agent[0], agent_next_position):
@@ -230,7 +220,6 @@ class CommunicatingAgent(Agent):
                     index = Pre_Junction.DIRECTION.value.index(is_pre_junction)
                     # If there is another agent in the junction
                     if self.__is_in_junction(near_agent[0]):
-                        #print(f"NEAR NEXT POSITION: {self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))}")
                         if self.__is_in_junction(self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))):
                             return BREAK
 
