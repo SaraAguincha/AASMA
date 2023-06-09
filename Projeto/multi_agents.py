@@ -20,6 +20,8 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
     results = np.zeros(n_episodes)
     collisions = np.zeros(n_episodes)
 
+    communication_handler.update_agents(list(agents))
+
     for episode in range(n_episodes):
         steps = 0
         terminals = [False for _ in range(len(agents))]
@@ -30,6 +32,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
             #print("\n")
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
+                agent.update_moving_direction()
             communication_handler.update_agents(list(agents))
             actions = [agent.action() for agent in agents]
             next_observations, rewards, terminals, info = environment.step(actions)
@@ -46,6 +49,9 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
             agent.reset_waiting_time()
 
         environment.close()
+
+        # if (collisions[episode] != 0):
+        #     break
 
     return results, collisions
 

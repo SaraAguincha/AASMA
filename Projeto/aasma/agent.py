@@ -50,6 +50,8 @@ class Agent(ABC):
     def reset_waiting_time(self):
         self.waiting_time = 0
 
+    def update_moving_direction(self):
+        pass
     @abstractmethod
     def action(self) -> int:
         raise NotImplementedError()

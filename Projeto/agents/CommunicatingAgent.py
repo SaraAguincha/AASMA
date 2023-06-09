@@ -60,13 +60,13 @@ class CommunicatingAgent(Agent):
 
         agent_route = self.observation[2][2][self.n_agents + 2:]
 
+        #self.__update_moving_direction(agent_position, agent_route)
+
         # get all the positions nearby agents that it can observe, except himself
         near_agents = self.__get_near_agents(agent_position)
 
         # stops at the intersection, gives priority to the right, if a car is in the junction stops
         # currently top has priority and always advances if no car is in the junction
-
-        self.__update_moving_direction(agent_position, agent_route)
 
         action = self.__get_action(agent_position, near_agents)
 
@@ -81,31 +81,50 @@ class CommunicatingAgent(Agent):
         if len(self.observation) != 0:
             return self.observation[2][2][self.n_agents:self.n_agents + 2]
         return []
+
+    def update_moving_direction(self):
+        agent_position = self.observation[2][2][self.n_agents:self.n_agents + 2]
+
+        agent_route = self.observation[2][2][self.n_agents + 2:]
+
+        if self.__is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
+            self.visited_positions += [list(agent_position)]
+
+        if list(agent_position) in Junction_Pos.DIRECTION.value:
+            # Forward
+            if agent_route[0] == 1:
+                # Turns 0 in counter-clockwise direction (stays the same direction)
+                pass
+            # Right
+            elif agent_route[1] == 1:
+                # Turns 1 in counter-clockwise direction (turns right)
+                index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
+                self.moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
+            # Left
+            elif agent_route[2] == 1:
+                # This means it's time to turn
+                # TODO - this is flimsy and should be fixed somewhere else (instead of 1 should be 2)
+                if len(self.visited_positions) == 2:
+                    # Turns 3 in counter-clockwise direction (turns left)
+                    index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
+                    #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
+                    self.moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
+                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 1) % 4]}")
+                else:
+                    # Turns 0 in counter-clockwise direction (stays the same direction)
+                    pass
+        elif agent_position[1] == 6:
+            self.moving_direction = Movement.DOWNWARDS.value
+        elif agent_position[1] == 7:
+            self.moving_direction = Movement.UPWARDS.value
+        elif agent_position[0] == 7:
+            self.moving_direction = Movement.RIGHTWARDS.value
+        elif agent_position[0] == 6:
+            self.moving_direction = Movement.LEFTWARDS.value
+        #print(f"Agent {self.agent_id} is turning {agent_route}, visited {self.visited_positions}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)} ")
     # ################# #
     # Auxiliary Methods #
     # ################# #
-
-    # def __turn_left(self, direction: str):
-    #     if direction == Movement.DOWNWARDS.value:
-    #         return Movement.RIGHTWARDS.value
-    #     elif direction == Movement.UPWARDS.value:
-    #         return Movement.LEFTWARDS.value
-    #     elif direction == Movement.RIGHTWARDS.value:
-    #         return Movement.UPWARDS.value
-    #     elif direction == Movement.LEFTWARDS.value:
-    #         return Movement.DOWNWARDS.value
-    #     return []
-    #
-    # def __turn_right(self, direction: str):
-    #     if direction == Movement.DOWNWARDS.value:
-    #         return Movement.LEFTWARDS.value
-    #     elif direction == Movement.UPWARDS.value:
-    #         return Movement.RIGHTWARDS.value
-    #     elif direction == Movement.RIGHTWARDS.value:
-    #         return Movement.DOWNWARDS.value
-    #     elif direction == Movement.LEFTWARDS.value:
-    #         return Movement.UPWARDS.value
-    #     return []
 
     def __request_moving_direction(self, agent_position):
         return self.communication_handler.request_moving_direction(agent_position)
@@ -159,42 +178,7 @@ class CommunicatingAgent(Agent):
             return Pre_Junction.LEFT.value
         return []
 
-    def __update_moving_direction(self, agent_position, agent_route):
-        if self.__is_in_junction(agent_position) and (list(agent_position) not in self.visited_positions):
-            self.visited_positions += [list(agent_position)]
 
-        if list(agent_position) in Junction_Pos.DIRECTION.value:
-            # Forward
-            if agent_route[0] == 1:
-                # Turns 0 in counter-clockwise direction (stays the same direction)
-                pass
-            # Right
-            elif agent_route[1] == 1:
-                # Turns 1 in counter-clockwise direction (turns right)
-                index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                self.moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
-            # Left
-            elif agent_route[2] == 1:
-                # This means it's time to turn
-                # TODO - this is flimsy and should be fixed somewhere else (instead of 1 should be 2)
-                if len(self.visited_positions) == 1:
-                    # Turns 3 in counter-clockwise direction (turns left)
-                    index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
-                    #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
-                    self.moving_direction = Movement.DIRECTION.value[(index + 1) % 4]
-                    #print(f"After: {self.moving_direction}, {Movement.DIRECTION.value[(index + 1) % 4]}")
-                else:
-                    # Turns 0 in counter-clockwise direction (stays the same direction)
-                    pass
-        elif agent_position[1] == 6:
-            self.moving_direction = Movement.DOWNWARDS.value
-        elif agent_position[1] == 7:
-            self.moving_direction = Movement.UPWARDS.value
-        elif agent_position[0] == 7:
-            self.moving_direction = Movement.RIGHTWARDS.value
-        elif agent_position[0] == 6:
-            self.moving_direction = Movement.LEFTWARDS.value
-        #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)} ")
 
     def __get_next_position(self, agent_position, moving_direction):
         if moving_direction == Movement.DOWNWARDS.value:
