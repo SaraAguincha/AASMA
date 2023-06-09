@@ -176,7 +176,8 @@ class CommunicatingAgent(Agent):
             # Left
             elif agent_route[2] == 1:
                 # This means it's time to turn
-                if len(self.visited_positions) == 2:
+                # TODO - this is flimsy and should be fixed somewhere else (instead of 1 should be 2)
+                if len(self.visited_positions) == 1:
                     # Turns 3 in counter-clockwise direction (turns left)
                     index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
                     #print(f"Before: {self.moving_direction}, {Movement.DIRECTION.value[index]}")
@@ -245,6 +246,7 @@ class CommunicatingAgent(Agent):
                     index = Pre_Junction.DIRECTION.value.index(is_pre_junction)
                     # If there is another agent in the junction
                     if self.__is_in_junction(near_agent[0]):
+                        #print(f"NEAR NEXT POSITION: {self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))}")
                         if self.__is_in_junction(self.__get_next_position(near_agent[0], self.communication_handler.request_moving_direction(near_agent[0]))):
                             return BREAK
 

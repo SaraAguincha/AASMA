@@ -39,7 +39,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
             observations = next_observations
         results[episode] = steps
 
-        print(f"Total collisions: {collisions[episode]}")
+        print(f"-\n-\n-\nTotal collisions: {collisions[episode]}\n-\n-\n-")
 
         for agent in agents:
             agent.reset_visited()
