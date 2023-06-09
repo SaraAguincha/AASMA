@@ -205,6 +205,7 @@ class TrafficJunction(gym.Env):
         :rtype: bool  
         """
         pos = self.agent_pos[agent_i]
+        
         if pos in self._destination:
             self._full_obs[pos[0]][pos[1]] = PRE_IDS['empty']
             return True
@@ -317,30 +318,58 @@ class TrafficJunction(gym.Env):
         # we still need to check both agent_dones and on_the_road because an agent may not be done
         # and have not entered the road yet 
         
+        
+        
         agent_curr_positions = []
+        agent_next_positions = []
         
         for agent_i, action in enumerate(agents_action):
+            if self._agent_dones[agent_i] and self._on_the_road[agent_i]:
+                agent_curr_positions += [[]]
+                agent_next_positions += [[]]
+                
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
+                #print(f"AGENT_I: {agent_i} POSITION: {self.agent_pos[agent_i]}")
                 agent_curr_positions += [list(self.agent_pos[agent_i]),]
+                next_pos = self.__get_next_position(agent_i, action)
+                
+                if next_pos is None:
+                    agent_next_positions += [list(self.agent_pos[agent_i]),]
+                else:
+                    agent_next_positions += [list(next_pos),]
+                    
+        test = []           
+        for pos in agent_curr_positions:
+            if pos == []:
+                continue
+            if pos in test:
+                print(agent_curr_positions)
+                print("NAAAAAAAAAAAAAAAAO\n\n\n\n\n\n\n\n")
+                
+            elif pos not in test:
+                test += [pos]
         
+        step_collisions += self.__update_agent_pos(agent_curr_positions, agent_next_positions)
         
         for agent_i, action in enumerate(agents_action):
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
                 self._agent_step_count[agent_i] += 1  # agent step count
-                collision_flag = self.__update_agent_pos(agent_i, agents_action, agent_curr_positions)
-                if collision_flag:
-                    rewards[agent_i] += self._collision_reward
-                    step_collisions += 1
+                
+                #collision_flag = self.__update_agent_pos(agent_i, agents_action, agent_curr_positions, agent_next_positions)
+                #if collision_flag:
+                    #rewards[agent_i] += self._collision_reward
+                #    step_collisions += 1
 
                 # gives additional step punishment to avoid jams
                 # at every time step, where `τ` is the number time steps passed since the car arrived.
                 # We need to keep track of step_count of each car and that has to be multiplied.
-                rewards[agent_i] += self._step_cost * self._agent_step_count[agent_i]
-            self._total_episode_reward[agent_i] += rewards[agent_i]
+                #rewards[agent_i] += self._step_cost * self._agent_step_count[agent_i]
+            #self._total_episode_reward[agent_i] += rewards[agent_i]
 
             # checks if destination was reached
             # once a car reaches it's destination , it will never enter again in any of the tracks
             # Also, if all cars have reached their destination, then we terminate the episode.
+            
             if self.__reached_dest(agent_i):
                 self._agent_dones[agent_i] = True
                 self.curr_cars_count -= 1
@@ -364,6 +393,7 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
+        #print("end of step\n")
         time.sleep(0)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
@@ -387,7 +417,7 @@ class TrafficJunction(gym.Env):
 
         return new_dir_vector
 
-    def __update_agent_pos(self, agent_i, agent_actions, agent_curr_positions):
+    def __update_agent_pos(self, agent_curr_positions, agent_next_positions):
         """
         Updates the agent position in the environment. Moves can be 0 (GAS) or 1 (BRAKE). If the move is 1 does nothing,
         car remains stopped. If the move is 0 then evaluate the route assigned. If the route is 1 (forward) then
@@ -404,34 +434,210 @@ class TrafficJunction(gym.Env):
         :return: bool flag associated to the existence or absence of a collision
         :rtype: bool
         """
+        collided_agents_i = []
+        new_agents_positions = []
 
-        curr_pos = copy.copy(self.agent_pos[agent_i])
-        next_pos = self.__get_next_position(agent_i, agent_actions)
-        route = self._agents_routes[agent_i]
+        #print("agent_nexts:", agent_next_positions)
+        agent_i = 0
+        while agent_i < len(agent_next_positions):
+            #print("agent_i:", agent_i)
+            next_pos = agent_next_positions[agent_i]
+            #print(f"CURRENT AGENT: {agent_i}, COLLIDED AGENTS: {collided_agents_i}, AGENTPOS {agent_curr_positions[agent_i]}, AGENTNEXT {next_pos}, NEWPOSITIONS {new_agents_positions}")
+
+            # agent has finished his run in this episode
+            if next_pos == []:
+                agent_i += 1
+                new_agents_positions.append(next_pos)
+                continue
+            
+            n_next_pos = agent_next_positions.count(next_pos)
+            
+            # only one agent going to that position
+            if n_next_pos == 1:
+                # if its the same position doesn't update
+                if next_pos == agent_curr_positions[agent_i]:
+                    agent_i += 1
+                    new_agents_positions.append(next_pos)
+                    continue
+                
+                else:
+                    new_collision = False
+                    # if the agent is in the collided
+                    if agent_i in collided_agents_i:
+                        # if the agent is in the collided his new position will be his current
+                        # but first verify if by using the current no agent will collide, if not add them to collide
+                        for pos in agent_next_positions:
+                            if agent_curr_positions[agent_i] == pos and (agent_next_positions.index(pos) not in collided_agents_i):
+                                new_collision = True
+                                collided_agents_i.append(agent_next_positions.index(pos))
+                                agent_i = -1
+                                #print("1")
+                                new_agents_positions.clear()
+                                break
+                        # if there is not a new collision caused by him stopping, update his new position to his curr
+                        if not new_collision:
+                            new_collision = False
+                            new_agents_positions.append(agent_curr_positions[agent_i])
+                    else:
+                        new_agents_positions.append(next_pos)               
+                        
+            # more than one car wants the same next_pos    
+            elif n_next_pos > 1:
+                # if its the same position doesn't update, and doesn't collide
+                if next_pos == agent_curr_positions[agent_i]:
+                    agent_i += 1
+                    new_agents_positions.append(next_pos)
+                    continue
+                
+                
+                # # if the others that have the same next_position, are in the collision list, append this one has the one that can advance
+                # agents_ids = self.__find_indices(agent_next_positions, next_pos)
+                # needed_agents = []
+                # print("AGENT_I", agent_i, "AGENTS_IDS", agents_ids)
+                # if agent_i not in agents_ids:
+                #     for i in collided_agents_i:
+                #         if i == agent_i:
+                #             break
+                #         else:
+                #             if i in agents_ids:
+                #                 needed_agents.append(i)
+                                                 
+                # if needed_agents == agents_ids[1:]:
+                #     agent_i += 1
+                #     new_agents_positions.append(next_pos)
+                #     continue
+                
+                new_collision = False
+                                    
+                    
+                # if the agent is in the collided
+                if agent_i in collided_agents_i:
+                    # if the agent is in the collided his new position will be his current
+                    # but first verify if by using the current no agent will collide, if not add them to collide
+                    for pos in agent_next_positions:
+                        if agent_curr_positions[agent_i] == pos and (agent_next_positions.index(pos) not in collided_agents_i):
+                            new_collision = True
+                            collided_agents_i.append(agent_next_positions.index(pos))
+                            agent_i = -1
+                            #print("2")
+                            new_agents_positions.clear()
+                            break
+                    
+                    # if there is not a new collision caused by him stopping, update his new position to his curr
+                    if not new_collision:
+                        new_collision = False
+                        new_agents_positions.append(agent_curr_positions[agent_i])
+
+                else:                    
+                    # if both want the same next position, get the agents_ids
+                    agents_ids = self.__find_indices(agent_next_positions, next_pos)
+                    flag_agent_stopped = False
+                    
+                    for i in agents_ids:
+                        # verifies if the agent stopped, if he has that agent will have priority
+                        if agent_next_positions[i] == agent_curr_positions[i]:
+                            flag_agent_stopped = True
+                            break
+                               
+                    # if one of the cars that want that position has stopped there, it has priority over everyone
+                    if flag_agent_stopped:
+                        # if its not the current agent that has stopped, it does not have priority
+                        if i != agent_i:
+                            if agent_i not in collided_agents_i:
+                                collided_agents_i.append(agent_i)
+                                agent_i = -1
+                                new_agents_positions.clear()
+                        flag_agent_stopped = False    
+                        
+                    else:
+                        #print("HAS NOT STOPPED, PRIORITY IS LOWER ID", agents_ids)
+                        new_collision = False
+                        # the lowest id will have priority, update his movement if the next agent didn't want to stop
+                        for ids in agents_ids:
+                            if (ids != agents_ids[0]) and (ids not in collided_agents_i):
+                                new_collision = True
+                                collided_agents_i.append(ids)
+                        
+                        if agent_i == agents_ids[0] and not new_collision:
+                            new_agents_positions.append(next_pos)    
+                        
+                        if new_collision:
+                            agent_i = -1
+                            #print(agents_ids)
+                            #print("4")
+                            new_agents_positions.clear()  
+                            new_collision = False        
+                                                              
+            agent_i += 1
         
-        # recursively gets the next position of the near agent to see if they will colide. If the other agent moves and liberates the cell
-        # they should not collide
-        if (next_pos is not None) and self.__will_collide(agent_i, agent_actions, agent_curr_positions, []):
-            return True
-        
-        elif (next_pos is not None) and self.__check_collision(next_pos):
-            return True
+           
+        #print("NEW POSITIONS:", new_agents_positions)
+        #input()
+        agent_i = 0
+        while agent_i < len(agent_next_positions):
+            #print("UPDATE AGENT:", agent_i)
+            if new_agents_positions[agent_i] == []:
+                agent_i += 1
+                continue
+            elif new_agents_positions[agent_i] == agent_curr_positions[agent_i]:
+                agent_i += 1
+                continue
+            else:
+                self.agent_pos[agent_i] = tuple(new_agents_positions[agent_i])
+                self._full_obs[agent_curr_positions[agent_i][0]][agent_curr_positions[agent_i][1]] = PRE_IDS['empty']
+                self.__update_agent_view(agent_i)
+                agent_i += 1
+           
+           
 
-        # if doesn't collide return False andupdates position
-        elif (next_pos is not None) and self._is_cell_vacant(next_pos):
-            self.agent_pos[agent_i] = next_pos
-            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
-            self.__update_agent_view(agent_i)
-
-        return False
+        #print("end update\n")            
+        return  len(collided_agents_i)
     
-    def __get_next_position(self, agent_i, agent_actions):
+    def __find_indices(self, list_to_check, item_to_find):
+        indices = []
+        for idx, value in enumerate(list_to_check):
+            if value == item_to_find:
+                indices.append(idx)
+        return indices
+    
+    # def __collided_agents(self, agent_i, agent_current_positions, agent_next_positions, collided_agents_i):
+        
+    #     if agent_i in collided_agents_i:
+    #         return 
+        
+    #     next_pos = agent_next_positions[agent_i]
+    #     # agent has finished his run in this episode
+    #     if next_pos == []:
+    #         return
+
+    #     n_next_pos = agent_next_positions.count(next_pos)
+
+    #     if n_next_pos == 1:
+    #         # if its the same position doesn't update
+    #         if agent_i not in collided_agents_i:
+    #             return
+
+    #     elif n_next_pos > 1:
+    #         # if its the same position doesn't update, and doesn't collide
+    #         if next_pos == agent_current_positions[agent_i]:
+    #             return
+            
+    #         else:                    
+    #             # if so, returns collision
+    #             # if not, both want that position, minor id wins
+    #             agents_ids = self.__find_indices(agent_next_positions, next_pos)
+                
+    #             if len(agents_ids) > 1:
+    #                 if agents_ids[1] not in collided_agents_i:
+    #                     return agents_ids[1]                   
+                                            
+    
+    def __get_next_position(self, agent_i, action):
         
         curr_pos = copy.copy(self.agent_pos[agent_i])
         next_pos = None
         route = self._agents_routes[agent_i]
-
-        if agent_actions[agent_i] == 0:  # GAS
+        if action == 0:  # GAS
             if route == 1:
                 next_pos = tuple([curr_pos[i] + self._agents_direction[agent_i][i] for i in range(len(curr_pos))])
             else:
@@ -444,36 +650,13 @@ class TrafficJunction(gym.Env):
                     next_pos = tuple([curr_pos[i] + new_dir_vector[i] for i in range(len(curr_pos))])
                 else:
                     next_pos = tuple([curr_pos[i] + self._agents_direction[agent_i][i] for i in range(len(curr_pos))])
-        elif agent_actions[agent_i] == 1:  # BRAKE
+        elif action == 1:  # BRAKE
             pass
         else:
             raise Exception('Action Not found!')
         
         return next_pos
-    
-    
-    def __will_collide(self, agent_i, agent_actions, agent_curr_positions, visited_positions):
-        
-        next_pos = self.__get_next_position(agent_i, agent_actions)
-        
-        # if next position is in visited positions
-        if (next_pos is not None) and visited_positions != [] and (list(next_pos) in visited_positions):
-            return True
-
-        # if next position is not in agent_curr_positions
-        elif (next_pos is not None) and visited_positions != [] and (list(next_pos) not in agent_curr_positions):
-            if self.__check_collision(next_pos):
-                return True
-            return False
-        
-        # recursively gets the next position of the near agent to see if they will colide. If the other agent moves and liberates the cell
-        # they should not collide
-        elif (next_pos is not None) and (list(next_pos) not in visited_positions) and (list(next_pos) in agent_curr_positions):
-            visited_positions += [agent_curr_positions[agent_curr_positions.index(list(next_pos))],]
-            if self.__will_collide(agent_curr_positions.index(list(next_pos)), agent_actions, agent_curr_positions, visited_positions):
-                return True
-            else:
-                return False
+            
 
     def reset(self):
         """
