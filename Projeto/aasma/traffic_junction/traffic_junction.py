@@ -178,8 +178,6 @@ class TrafficJunction(gym.Env):
         :return: boolean stating true or false
         :rtype: bool
         """
-        #if self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1):
-            #print(f"Collision in position {pos}")
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]].find(PRE_IDS['agent']) > -1)
 
     def __is_gate_free(self):
@@ -337,28 +335,12 @@ class TrafficJunction(gym.Env):
                     agent_next_positions += [list(self.agent_pos[agent_i]),]
                 else:
                     agent_next_positions += [list(next_pos),]
-                    
-        test = []           
-        for pos in agent_curr_positions:
-            if pos == []:
-                continue
-            if pos in test:
-                print(agent_curr_positions)
-                print("NAAAAAAAAAAAAAAAAO\n\n\n\n\n\n\n\n")
-                
-            elif pos not in test:
-                test += [pos]
         
         step_collisions += self.__update_agent_pos(agent_curr_positions, agent_next_positions)
         
         for agent_i, action in enumerate(agents_action):
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
                 self._agent_step_count[agent_i] += 1  # agent step count
-                
-                #collision_flag = self.__update_agent_pos(agent_i, agents_action, agent_curr_positions, agent_next_positions)
-                #if collision_flag:
-                    #rewards[agent_i] += self._collision_reward
-                #    step_collisions += 1
 
                 # gives additional step punishment to avoid jams
                 # at every time step, where `τ` is the number time steps passed since the car arrived.
@@ -393,7 +375,6 @@ class TrafficJunction(gym.Env):
                 self._agent_turned[agent_to_enter] = False
                 self._agents_routes[agent_to_enter] = random.randint(1, self._n_routes)  # (1, 3)
                 self.__update_agent_view(agent_to_enter)
-        #print("end of step\n")
         time.sleep(0)
         return self.get_agent_obs(), rewards, self._agent_dones, {'step_collisions': step_collisions}
 
@@ -437,12 +418,9 @@ class TrafficJunction(gym.Env):
         collided_agents_i = []
         new_agents_positions = []
 
-        #print("agent_nexts:", agent_next_positions)
         agent_i = 0
         while agent_i < len(agent_next_positions):
-            #print("agent_i:", agent_i)
             next_pos = agent_next_positions[agent_i]
-            #print(f"CURRENT AGENT: {agent_i}, COLLIDED AGENTS: {collided_agents_i}, AGENTPOS {agent_curr_positions[agent_i]}, AGENTNEXT {next_pos}, NEWPOSITIONS {new_agents_positions}")
 
             # agent has finished his run in this episode
             if next_pos == []:
@@ -471,7 +449,6 @@ class TrafficJunction(gym.Env):
                                 new_collision = True
                                 collided_agents_i.append(agent_next_positions.index(pos))
                                 agent_i = -1
-                                #print("1")
                                 new_agents_positions.clear()
                                 break
                         # if there is not a new collision caused by him stopping, update his new position to his curr
@@ -489,24 +466,6 @@ class TrafficJunction(gym.Env):
                     new_agents_positions.append(next_pos)
                     continue
                 
-                
-                # # if the others that have the same next_position, are in the collision list, append this one has the one that can advance
-                # agents_ids = self.__find_indices(agent_next_positions, next_pos)
-                # needed_agents = []
-                # print("AGENT_I", agent_i, "AGENTS_IDS", agents_ids)
-                # if agent_i not in agents_ids:
-                #     for i in collided_agents_i:
-                #         if i == agent_i:
-                #             break
-                #         else:
-                #             if i in agents_ids:
-                #                 needed_agents.append(i)
-                                                 
-                # if needed_agents == agents_ids[1:]:
-                #     agent_i += 1
-                #     new_agents_positions.append(next_pos)
-                #     continue
-                
                 new_collision = False
                                     
                     
@@ -519,7 +478,6 @@ class TrafficJunction(gym.Env):
                             new_collision = True
                             collided_agents_i.append(agent_next_positions.index(pos))
                             agent_i = -1
-                            #print("2")
                             new_agents_positions.clear()
                             break
                     
@@ -550,7 +508,6 @@ class TrafficJunction(gym.Env):
                         flag_agent_stopped = False    
                         
                     else:
-                        #print("HAS NOT STOPPED, PRIORITY IS LOWER ID", agents_ids)
                         new_collision = False
                         # the lowest id will have priority, update his movement if the next agent didn't want to stop
                         for ids in agents_ids:
@@ -563,19 +520,14 @@ class TrafficJunction(gym.Env):
                         
                         if new_collision:
                             agent_i = -1
-                            #print(agents_ids)
-                            #print("4")
                             new_agents_positions.clear()  
                             new_collision = False        
                                                               
             agent_i += 1
         
            
-        #print("NEW POSITIONS:", new_agents_positions)
-        #input()
         agent_i = 0
         while agent_i < len(agent_next_positions):
-            #print("UPDATE AGENT:", agent_i)
             if new_agents_positions[agent_i] == []:
                 agent_i += 1
                 continue
@@ -592,8 +544,6 @@ class TrafficJunction(gym.Env):
            
            
 
-        #print("end update\n")
-        #print(f"Collided: {collided_agents_i}")
         return len(collided_agents_i)
     
     def __find_indices(self, list_to_check, item_to_find):
@@ -601,39 +551,7 @@ class TrafficJunction(gym.Env):
         for idx, value in enumerate(list_to_check):
             if value == item_to_find:
                 indices.append(idx)
-        return indices
-    
-    # def __collided_agents(self, agent_i, agent_current_positions, agent_next_positions, collided_agents_i):
-        
-    #     if agent_i in collided_agents_i:
-    #         return 
-        
-    #     next_pos = agent_next_positions[agent_i]
-    #     # agent has finished his run in this episode
-    #     if next_pos == []:
-    #         return
-
-    #     n_next_pos = agent_next_positions.count(next_pos)
-
-    #     if n_next_pos == 1:
-    #         # if its the same position doesn't update
-    #         if agent_i not in collided_agents_i:
-    #             return
-
-    #     elif n_next_pos > 1:
-    #         # if its the same position doesn't update, and doesn't collide
-    #         if next_pos == agent_current_positions[agent_i]:
-    #             return
-            
-    #         else:                    
-    #             # if so, returns collision
-    #             # if not, both want that position, minor id wins
-    #             agents_ids = self.__find_indices(agent_next_positions, next_pos)
-                
-    #             if len(agents_ids) > 1:
-    #                 if agents_ids[1] not in collided_agents_i:
-    #                     return agents_ids[1]                   
-                                            
+        return indices                                                  
     
     def __get_next_position(self, agent_i, action):
         

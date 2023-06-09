@@ -56,7 +56,7 @@ class WaitingAgent(Agent):
         self.has_entered_junction = False
 
     def action(self) -> int:
-
+        max_time = None
         # middle cell of a 5x5 grid, and position on the list of coordinates
         agent_position = self.observation[2][2][self.n_agents:self.n_agents + 2]
 
@@ -79,15 +79,12 @@ class WaitingAgent(Agent):
 
         if not self.has_entered_junction:
             if list(self.get_agent_position()) and list(self.get_agent_position()) != [0, 0]:
-                #print(list(self.get_agent_position()))
                 self.waiting_time += 1
         else:
+            max_time = self.waiting_time
             self.waiting_time = 0
 
-        return action
-
-    def reset_has_entered_junction(self):
-        self.has_entered_junction = False
+        return action, max_time
 
     def get_moving_direction(self):
         return self.moving_direction

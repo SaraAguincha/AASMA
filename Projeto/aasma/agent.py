@@ -51,7 +51,7 @@ class Agent(ABC):
         self.waiting_time = 0
 
     def reset_has_entered_junction(self):
-        pass
+        self.has_entered_junction = False
 
     def update_moving_direction(self):
         pass

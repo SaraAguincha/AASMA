@@ -194,6 +194,81 @@ def plot_multiple_confidence_bars(axs, names, means, std_devs, N, title, x_label
     axs.yaxis.grid(True)
     
 
+def compare_all_results(results, collisions, waitingTime, confidence=0.95, title="Agents Comparison", metric="Steps Per Episode", colors=None):
+
+    """Displays a bar plot comparing the performance of different agents/teams.
+
+        Parameters
+        ----------
+
+        results: dict
+            A dictionary where keys are the names and the values sequences of trials
+        confidence: float
+            The confidence level for the confidence interval
+        title: str
+            The title of the plot
+        metric: str
+            The name of the metric for comparison
+        colors: Sequence[str]
+            A sequence of colors (one for each agent/team)
+
+        """
+
+    # same for every plot
+    names = list(results.keys())
+    
+    results_means = [result.mean() for result in results.values()]   
+    results_stds = [result.std() for result in results.values()]
+    results_N = [result.size for result in results.values()]
+    
+    collisions_means = [collision.mean() for collision in collisions.values()]
+    collisions_stds = [collision.std() for collision in collisions.values()]
+    collisions_N = [collision.size for collision in collisions.values()]
+    
+    waitingTime_means = [wait.mean() for wait in waitingTime.values()]
+    waitingTime_stds = [wait.std() for wait in waitingTime.values()]
+    waitingTime_N = [wait.size for wait in waitingTime.values()]
+    
+    fig, axs = plt.subplots(3,1)
+
+    plot_multiple_confidence_bars(
+        axs[0],
+        names=names,
+        means=results_means,
+        std_devs=results_stds,
+        N=results_N,
+        title=title,
+        x_label="", y_label=f"Avg. {metric}",
+        confidence=confidence, colors=colors
+    )
+    
+    plot_multiple_confidence_bars(
+        axs[1],
+        names=names,
+        means=collisions_means,
+        std_devs=collisions_stds,
+        N=collisions_N,
+        title="",
+        x_label="", y_label=f"Avg. collisions Per Episode",
+        confidence=confidence, colors=colors
+    )
+    
+    plot_multiple_confidence_bars(
+        axs[2],
+        names=names,
+        means=waitingTime_means,
+        std_devs=waitingTime_stds,
+        N=waitingTime_N,
+        title="",
+        x_label="", y_label=f"Avg. Waiting time Per Episode",
+        confidence=confidence, colors=colors
+    )
+    
+    plt.show()
+    plt.close()
+    
+    
+    
 def compare_results_and_collisions(results, collisions, confidence=0.95, title="Agents Comparison", metric="Steps Per Episode", colors=None):
 
     """Displays a bar plot comparing the performance of different agents/teams.

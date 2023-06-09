@@ -2,9 +2,10 @@ import argparse
 import numpy as np
 from gym import Env
 from typing import Sequence
+from statistics import mean
 
 from aasma import Agent
-from aasma.utils import compare_results, compare_results_and_collisions
+from aasma.utils import compare_all_results, compare_results_and_collisions
 from aasma.traffic_junction import TrafficJunction
 from agents.CommunicationHandler import CommunicationHandler
 
@@ -15,10 +16,11 @@ from agents.CommunicatingAgent import CommunicatingAgent
 from agents.WaitingAgent import WaitingAgent
 
 
-def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool) -> np.ndarray:
+def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, render: bool, random: bool) -> np.ndarray:
 
     results = np.zeros(n_episodes)
     collisions = np.zeros(n_episodes)
+    waitingSteps = np.zeros(n_episodes)
 
     communication_handler.update_agents(list(agents))
 
@@ -26,20 +28,35 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
         steps = 0
         terminals = [False for _ in range(len(agents))]
         observations = environment.reset()
-
+        
+        Timers = []
         while not all(terminals):
+            actions = []
             steps += 1
             for observations, agent in zip(observations, agents):
                 agent.see(observations)
                 agent.update_moving_direction()
             communication_handler.update_agents(list(agents))
-            actions = [agent.action() for agent in agents]
+            
+            if not random:
+                for agent in agents:
+                    action, TimeStep = agent.action()
+                    if TimeStep != None and TimeStep != 0:
+                        Timers += [TimeStep]
+                    actions += [action]
+            else:
+                for agent in agents:
+                    action, TimeStep = agent.action()
+                    actions += [action]
             next_observations, rewards, terminals, info = environment.step(actions)
             collisions[episode] += info['step_collisions']
+            
             if render:
                 environment.render()
             observations = next_observations
         results[episode] = steps
+        if not random:
+            waitingSteps[episode] += mean(Timers)
 
         for agent in agents:
             agent.reset_visited()
@@ -48,7 +65,7 @@ def run_multi_agent(environment: Env, agents: Sequence[Agent], n_episodes: int, 
 
         environment.close()
 
-    return results, collisions
+    return results, collisions, waitingSteps
 
 
 if __name__ == '__main__':
@@ -97,16 +114,26 @@ if __name__ == '__main__':
     # 3 - Evaluate teams
     results = {}
     collisions = {}
+    waitingTime = {}
     for team, agents in teams.items():
-        result, collision = run_multi_agent(environment, agents, opt.episodes, opt.render)
+        result, collision, wait = run_multi_agent(environment, agents, opt.episodes, opt.render, opt.random)
         results[team] = result
         collisions[team] = collision
+        waitingTime[team] = wait
 
-    # 4 - Compare results    
-    compare_results_and_collisions(
-        results,
-        collisions,
-        title="Results on 'Traffic Junction' Environment",
-        colors=["orange", "blue", "green", "red"]
-    )
-
+    # 4 - Compare results
+    if opt.random:
+        compare_results_and_collisions(
+            results,
+            collisions,
+            title="Results on 'Traffic Junction' Environment",
+            colors=["orange", "blue", "green", "red"]
+        )
+    else:
+        compare_all_results(
+            results, 
+            collisions, 
+            waitingTime,
+            title="Results on 'Traffic Junction' Environment",
+            colors=["orange", "blue", "green", "red"]
+        )

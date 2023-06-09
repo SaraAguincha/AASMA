@@ -45,9 +45,12 @@ class ConventionAgent(Agent):
         self.visited_positions = []
         self.moving_direction = ""
         self.pre_junction_pos = []
+        self.waiting_time = 0
+        self.has_entered_junction = False
 
 
     def action(self) -> int:
+        max_time = None
 
         # middle cell of a 5x5 grid, and position on the list of coordinates
         agent_position = self.observation[2][2][self.n_agents:self.n_agents + 2]
@@ -63,8 +66,18 @@ class ConventionAgent(Agent):
         self.__update_moving_direction(agent_position, agent_route)
 
         action = self.__get_action(agent_position, near_agents)
+        
+        if self.__is_in_junction(agent_position):
+            self.has_entered_junction = True
+        
+        if not self.has_entered_junction:
+            if list(agent_position) and list(agent_position) != [0, 0]:
+                self.waiting_time += 1
+        else:
+            max_time = self.waiting_time
+            self.waiting_time = 0
 
-        return action
+        return action, max_time
 
     # ################# #
     # Auxiliary Methods #
