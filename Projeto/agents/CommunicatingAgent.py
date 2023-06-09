@@ -129,7 +129,6 @@ class CommunicatingAgent(Agent):
             self.moving_direction = Movement.RIGHTWARDS.value
         elif agent_position[0] == 6:
             self.moving_direction = Movement.LEFTWARDS.value
-        #print(f"Agent {self.agent_id} is turning {agent_route}, visited {self.visited_positions}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)} ")
     # ################# #
     # Auxiliary Methods #
     # ################# #
@@ -139,13 +138,11 @@ class CommunicatingAgent(Agent):
 
     def __get_near_agents(self, agent_position):
         """
-        TODO - add description for observation
-
         Given the agent observation (currently a grid of 5x5, it returns
         a array of the positions of the near agents, and their current route.
 
         Args:
-            observation (array): _description_
+            observation (array): observation of the agent
             n_agents (int): it represents how many agents are in the simulation
 
         Returns:

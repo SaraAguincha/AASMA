@@ -135,7 +135,6 @@ class WaitingAgent(Agent):
                 self.moving_direction = Movement.DIRECTION.value[(index + 3) % 4]
             # Left
             elif agent_route[2] == 1:
-                # TODO - this is flimsy and should be fixed somewhere else (instead of 1 should be 2)
                 if len(self.visited_positions) == 2:
                     # Turns 3 in counter-clockwise direction (turns left)
                     index = Pre_Junction.DIRECTION.value.index(self.pre_junction_pos)
@@ -151,7 +150,6 @@ class WaitingAgent(Agent):
             self.moving_direction = Movement.RIGHTWARDS.value
         elif agent_position[0] == 6:
             self.moving_direction = Movement.LEFTWARDS.value
-        #print(f"Agent {self.agent_id} is turning {agent_route}, moving {self.moving_direction}, next position {self.__get_next_position(agent_position, self.moving_direction)}, waiting for {self.waiting_time} steps")
 
     # ################# #
     # Auxiliary Methods #
@@ -166,20 +164,17 @@ class WaitingAgent(Agent):
             else:
                 axis = "Vertical"
             for near_agent in nearby_agents:
-                #print(f"Message: {near_agent[0]}, {self.waiting_time}, {axis}")
                 self.communication_handler.send_waiting_time(near_agent[0], self.waiting_time, axis=axis)
     def __request_moving_direction(self, agent_position):
         return self.communication_handler.request_moving_direction(agent_position)
 
     def __get_near_agents(self, agent_position):
         """
-        TODO - add description for observation
-
         Given the agent observation (currently a grid of 5x5, it returns
         a array of the positions of the near agents, and their current route.
 
         Args:
-            observation (array): _description_
+            observation (array): observation of the agent
             n_agents (int): it represents how many agents are in the simulation
 
         Returns:

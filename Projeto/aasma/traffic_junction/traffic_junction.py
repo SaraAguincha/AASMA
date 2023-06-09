@@ -316,8 +316,6 @@ class TrafficJunction(gym.Env):
         # we still need to check both agent_dones and on_the_road because an agent may not be done
         # and have not entered the road yet 
         
-        
-        
         agent_curr_positions = []
         agent_next_positions = []
         
@@ -327,7 +325,6 @@ class TrafficJunction(gym.Env):
                 agent_next_positions += [[]]
                 
             if not self._agent_dones[agent_i] and self._on_the_road[agent_i]:
-                #print(f"AGENT_I: {agent_i} POSITION: {self.agent_pos[agent_i]}")
                 agent_curr_positions += [list(self.agent_pos[agent_i]),]
                 next_pos = self.__get_next_position(agent_i, action)
                 
@@ -466,8 +463,7 @@ class TrafficJunction(gym.Env):
                     new_agents_positions.append(next_pos)
                     continue
                 
-                new_collision = False
-                                    
+                new_collision = False          
                     
                 # if the agent is in the collided
                 if agent_i in collided_agents_i:
@@ -524,7 +520,6 @@ class TrafficJunction(gym.Env):
                             new_collision = False        
                                                               
             agent_i += 1
-        
            
         agent_i = 0
         while agent_i < len(agent_next_positions):
